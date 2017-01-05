@@ -127,11 +127,24 @@ declare module Immutable {
 
     /**
      * True if the provided value is a List
+     *
+     * ```js
+     * List.isList([]); // false
+     * List.isList(List([])); // true
+     * ```
      */
     function isList(maybeList: any): boolean;
 
     /**
      * Creates a new List containing `values`.
+     *
+     * ```js
+     * List.of(1, 2, 3, 4).toJS();
+     * // [ 1, 2, 3, 4 ]
+     *
+     * List.of({x:1}, 2, [3], 4).toJS();
+     * // [ { x: 1 }, 2, [ 3 ], 4 ]
+     * ```
      */
     function of<T>(...values: T[]): List<T>;
   }
@@ -139,6 +152,27 @@ declare module Immutable {
   /**
    * Create a new immutable List containing the values of the provided
    * iterable-like.
+   *
+   * ```js
+   * List().toJS(); // []
+   *
+   * const plainArray = [1, 2, 3, 4];
+   * const listFromPlainArray = List(plainArray);
+   *
+   * const plainSet = new Set([1, 2, 3, 4]);
+   * const listFromPlainSet = List(plainSet);
+   *
+   * const iterableArray = plainArray[Symbol.iterator]();
+   * const listFromIterableArray = List(iterableArray);
+   *
+   * listFromPlainArray.toJS(); // [ 1, 2, 3, 4 ]
+   * listFromPlainSet.toJS(); // [ 1, 2, 3, 4 ]
+   * listFromIterableArray.toJS(); // [ 1, 2, 3, 4 ]
+   *
+   * Immutable.is(listFromPlainArray, listFromIterableSet); // true
+   * Immutable.is(listFromPlainSet, listFromIterableSet) // true
+   * Immutable.is(listFromPlainSet, listFromPlainArray) // true
+   * ```
    */
   export function List<T>(): List<T>;
   export function List<T>(iter: Iterable.Indexed<T>): List<T>;
@@ -162,6 +196,15 @@ declare module Immutable {
      *
      * If `index` larger than `size`, the returned List's `size` will be large
      * enough to include the `index`.
+     *
+     * ```js
+     * const originalList = List([0]);
+     * originalList.set(1, 1).toJS(); // [ 0, 1 ]
+     * originalList.set(0, 'overwritten').toJS(); // [ 'overwritten' ]
+     *
+     * List().set(50000, 'value').size;
+     * //50001 
+     * ```
      */
     set(index: number, value: T): List<T>;
 
@@ -177,6 +220,11 @@ declare module Immutable {
      *
      * Note: `delete` cannot be safely used in IE8
      * @alias remove
+     *
+     * ```js
+     * List([0, 1, 2, 3, 4]).delete(0).toJS();
+     * // [ 1, 2, 3, 4 ]
+     * ```
      */
     delete(index: number): List<T>;
     remove(index: number): List<T>;
@@ -186,17 +234,32 @@ declare module Immutable {
      * List. Values at indices above `index` are shifted over by 1.
      *
      * This is synonymous with `list.splice(index, 0, value)
+     *
+     * ```js
+     * List([0, 1, 2, 3, 4]).insert(6, 5).toJS();
+     * // [ 0, 1, 2, 3, 4, 5 ]
+     * ```
      */
     insert(index: number, value: T): List<T>;
 
     /**
      * Returns a new List with 0 size and no values.
+     *
+     * ```js
+     * List([1, 2, 3, 4]).clear().toJS();
+     * // []
+     * ```
      */
     clear(): List<T>;
 
     /**
      * Returns a new List with the provided `values` appended, starting at this
      * List's `size`.
+     *
+     * ```js
+     * List([1, 2, 3, 4]).push(5).toJS();
+     * // [ 1, 2, 3, 4, 5 ]
+     * ```
      */
     push(...values: T[]): List<T>;
 
@@ -207,12 +270,21 @@ declare module Immutable {
      * Note: this differs from `Array#pop` because it returns a new
      * List rather than the removed value. Use `last()` to get the last value
      * in this List.
+     * ```js
+     * List([1, 2, 3, 4]).pop().toJS();
+     * // [ 1, 2, 3 ]
+     * ```
      */
     pop(): List<T>;
 
     /**
      * Returns a new List with the provided `values` prepended, shifting other
      * values ahead to higher indices.
+     *
+     * ```js
+     * List([ 2, 3, 4]).unshift(1).toJS();
+     * // [ 1, 2, 3, 4 ]
+     * ```
      */
     unshift(...values: T[]): List<T>;
 
@@ -223,6 +295,11 @@ declare module Immutable {
      * Note: this differs from `Array#shift` because it returns a new
      * List rather than the removed value. Use `first()` to get the first
      * value in this List.
+     *
+     * ```js
+     * List([ 0, 1, 2, 3, 4]).shift(0).toJS(); 
+     * // [ 1, 2, 3, 4 ]
+     * ```
      */
     shift(): List<T>;
 
@@ -251,11 +328,11 @@ declare module Immutable {
      * @see `Map#mergeWith`
      */
     mergeWith(
-      merger: (previous?: T, next?: T, key?: number) => T,
+      merger: (previous: T, next: T, key: number) => T,
       ...iterables: Iterable.Indexed<T>[]
     ): List<T>;
     mergeWith(
-      merger: (previous?: T, next?: T, key?: number) => T,
+      merger: (previous: T, next: T, key: number) => T,
       ...iterables: Array<T>[]
     ): List<T>;
 
@@ -269,11 +346,11 @@ declare module Immutable {
      * @see `Map#mergeDeepWith`
      */
     mergeDeepWith(
-      merger: (previous?: T, next?: T, key?: number) => T,
+      merger: (previous: T, next: T, key: number) => T,
       ...iterables: Iterable.Indexed<T>[]
     ): List<T>;
     mergeDeepWith(
-      merger: (previous?: T, next?: T, key?: number) => T,
+      merger: (previous: T, next: T, key: number) => T,
       ...iterables: Array<T>[]
     ): List<T>;
 
@@ -298,6 +375,11 @@ declare module Immutable {
      *
      * Index numbers are used as keys to determine the path to follow in
      * the List.
+     *
+     * ```js
+     * Immutable.fromJS([0, 1, 2, [3, 4]]).setIn([3, 0], -3).toJS();
+     * // [ 0, 1, 2, [ -3, 4 ] ]
+     * ```
      */
     setIn(keyPath: Array<any>, value: any): List<T>;
     setIn(keyPath: Iterable<any, any>, value: any): List<T>;
@@ -306,6 +388,10 @@ declare module Immutable {
      * Returns a new List having removed the value at this `keyPath`. If any
      * keys in `keyPath` do not exist, no change will occur.
      *
+     * ```js
+     * Immutable.fromJS([0, 1, 2, [3, 4]]).deleteIn([3, 1]).toJS();
+     * // [ 0, 1, 2, [ 3 ] ]
+     * ```
      * @alias removeIn
      */
     deleteIn(keyPath: Array<any>): List<T>;
@@ -418,11 +504,25 @@ declare module Immutable {
 
     /**
      * True if the provided value is a Map
+     *
+     * ```js
+     * Map.isMap({}); // false
+     * Map.isMap(Immutable.Map()); // true
+     * ```
      */
     function isMap(maybeMap: any): boolean;
 
     /**
      * Creates a new Map from alternating keys and values
+     *
+     * ```js
+     * Map.of(
+     *   'key', 'value', 
+     *   'numerical value', 3, 
+     *    0, 'numerical key'
+     * ).toJS(); 
+     * // { '0': 'numerical key', key: 'value', 'numerical value': 3 }
+     * ```
      */
     function of(...keyValues: any[]): Map<any, any>;
   }
@@ -470,6 +570,15 @@ declare module Immutable {
     /**
      * Returns a new Map also containing the new key, value pair. If an equivalent
      * key already exists in this Map, it will be replaced.
+     *
+     * ```js
+     * const originalMap = Immutable.Map();
+     * const newerMap = originalMap.set('key', 'value');
+     * const newestMap = newerMap.set('key', 'newer value');
+     * originalMap.toJS(); // {}
+     * newerMap.toJS(); // { key: 'value' }
+     * newestMap.toJS(); // { key: 'newer value' }
+     * ```
      */
     set(key: K, value: V): Map<K, V>;
 
@@ -479,12 +588,25 @@ declare module Immutable {
      * Note: `delete` cannot be safely used in IE8, but is provided to mirror
      * the ES6 collection API.
      * @alias remove
+     *
+     * ```js
+     * Immutable.Map({
+     *   key: 'value', 
+     *   otherKey: 'other value'
+     * }).delete('otherKey').toJS();
+     * // { key: 'value' }
+     * ```
      */
     delete(key: K): Map<K, V>;
     remove(key: K): Map<K, V>;
 
     /**
      * Returns a new Map containing no keys or values.
+     * 
+     * ```js
+     * Immutable.Map({ key: 'value' }).clear().toJS();
+     * // {}
+     * ```
      */
     clear(): Map<K, V>;
 
@@ -495,6 +617,45 @@ declare module Immutable {
      * called with the Map itself.
      *
      * Equivalent to: `map.set(key, updater(map.get(key, notSetValue)))`.
+     * 
+     * ```js
+     * const originalMap = Immutable.Map({
+     *   key: 'value',
+     *   subObject: { subKey: 'subValue' }
+     * });
+     *
+     * const newMap = originalMap.update(map => {
+     *   return Immutable.Map(map.get('subObject'));
+     * });
+     * newMap.toJS(); // { subKey: 'subValue' }
+     * ```
+     *
+     * ```js
+     * const originalMap = Immutable.Map({
+     *   key: 'value'
+     * });
+
+     * const newMap = originalMap.update('key', value => {
+     *   return value + value;
+     * });
+     * newMap.toJS(); // { key: 'valuevalue' }
+     * ```
+     *
+     * ```js
+     * const originalMap = Immutable.Map({
+     *   key: 'value'
+     * });
+
+     * let newMap = originalMap.update('noKey', 'no value', value => {
+     *   return value + value;
+     * });
+     * newMap.toJS(); // { key: 'value', noKey: 'no valueno value' }
+     *
+     * newMap = originalMap.update('key', 'no value', value => {
+     *   return value + value;
+     * });
+     * newMap.toJS(); // { key: 'valuevalue' }
+     * ```
      */
     update(updater: (value: Map<K, V>) => Map<K, V>): Map<K, V>;
     update(key: K, updater: (value: V) => V): Map<K, V>;
@@ -532,11 +693,11 @@ declare module Immutable {
      *
      */
     mergeWith(
-      merger: (previous?: V, next?: V, key?: K) => V,
+      merger: (previous: V, next: V, key: K) => V,
       ...iterables: Iterable<K, V>[]
     ): Map<K, V>;
     mergeWith(
-      merger: (previous?: V, next?: V, key?: K) => V,
+      merger: (previous: V, next: V, key: K) => V,
       ...iterables: {[key: string]: V}[]
     ): Map<string, V>;
 
@@ -563,11 +724,11 @@ declare module Immutable {
      *
      */
     mergeDeepWith(
-      merger: (previous?: V, next?: V, key?: K) => V,
+      merger: (previous: V, next: V, key: K) => V,
       ...iterables: Iterable<K, V>[]
     ): Map<K, V>;
     mergeDeepWith(
-      merger: (previous?: V, next?: V, key?: K) => V,
+      merger: (previous: V, next: V, key: K) => V,
       ...iterables: {[key: string]: V}[]
     ): Map<string, V>;
 
@@ -577,6 +738,28 @@ declare module Immutable {
     /**
      * Returns a new Map having set `value` at this `keyPath`. If any keys in
      * `keyPath` do not exist, a new immutable Map will be created at that key.
+     *
+     * ```js
+     * const originalMap = Immutable.fromJS({
+     *   subObject: {
+     *     subKey: 'subvalue',
+     *     subSubObject: {
+     *       subSubKey: 'subSubValue'
+     *     }
+     *   }
+     * });
+
+     * const newMap = originalMap.setIn(['subObject', 'subKey'], 'ha ha!');
+     * newMap.toJS();
+     * // {subObject:{subKey:'ha ha!', subSubObject:{subSubKey:'subSubValue'}}}
+     * 
+     * const newerMap = originalMap.setIn(
+     *   ['subObject', 'subSubObject', 'subSubKey'],
+     *   'ha ha ha!'
+     * );
+     * newerMap.toJS();
+     * // {subObject:{subKey:'subvalue', subSubObject:{subSubKey:'ha ha ha!'}}}
+     * ```
      */
     setIn(keyPath: Array<any>, value: any): Map<K, V>;
     setIn(KeyPath: Iterable<any, any>, value: any): Map<K, V>;
@@ -1373,6 +1556,14 @@ declare module Immutable {
   export module Iterable {
     /**
      * True if `maybeIterable` is an Iterable, or any of its subclasses.
+     *
+     * ```js
+     * Iterable.isIterable([]); // false
+     * Iterable.isIterable({}); // false
+     * Iterable.isIterable(Immutable.Map()); // true
+     * Iterable.isIterable(Immutable.List()); // true
+     * Iterable.isIterable(Immutable.Stack()); // true
+     * ```
      */
     function isIterable(maybeIterable: any): boolean;
 
@@ -1450,7 +1641,7 @@ declare module Immutable {
        *
        */
       mapKeys<M>(
-        mapper: (key?: K, value?: V, iter?: /*this*/Iterable.Keyed<K, V>) => M,
+        mapper: (key: K, value: V, iter: /*this*/Iterable.Keyed<K, V>) => M,
         context?: any
       ): /*this*/Iterable.Keyed<M, V>;
 
@@ -1465,9 +1656,9 @@ declare module Immutable {
        */
       mapEntries<KM, VM>(
         mapper: (
-          entry?: /*(K, V)*/Array<any>,
-          index?: number,
-          iter?: /*this*/Iterable.Keyed<K, V>
+          entry: /*(K, V)*/Array<any>,
+          index: number,
+          iter: /*this*/Iterable.Keyed<K, V>
         ) => /*[KM, VM]*/Array<any>,
         context?: any
       ): /*this*/Iterable.Keyed<KM, VM>;
@@ -1632,7 +1823,7 @@ declare module Immutable {
        * provided predicate function. Otherwise -1 is returned.
        */
       findIndex(
-        predicate: (value?: T, index?: number, iter?: /*this*/Iterable.Indexed<T>) => boolean,
+        predicate: (value: T, index: number, iter: /*this*/Iterable.Indexed<T>) => boolean,
         context?: any
       ): number;
 
@@ -1641,7 +1832,7 @@ declare module Immutable {
        * provided predicate function. Otherwise -1 is returned.
        */
       findLastIndex(
-        predicate: (value?: T, index?: number, iter?: /*this*/Iterable.Indexed<T>) => boolean,
+        predicate: (value: T, index: number, iter: /*this*/Iterable.Indexed<T>) => boolean,
         context?: any
       ): number;
     }
@@ -1962,7 +2153,7 @@ declare module Immutable {
      *
      */
     map<M>(
-      mapper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => M,
+      mapper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => M,
       context?: any
     ): /*this*/Iterable<K, M>;
 
@@ -1975,7 +2166,7 @@ declare module Immutable {
      *
      */
     filter(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): /*this*/Iterable<K, V>;
 
@@ -1988,7 +2179,7 @@ declare module Immutable {
      *
      */
     filterNot(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): /*this*/Iterable<K, V>;
 
@@ -2013,6 +2204,15 @@ declare module Immutable {
      *
      * When sorting collections which have no defined order, their ordered
      * equivalents will be returned. e.g. `map.sort()` returns OrderedMap.
+     *
+     * ```js
+     * Seq({c: 3, a: 1, b: 2}).sort((a, b) => {
+     *   if (a < b) { return -1; }
+     *   if (a > b) { return 1; }
+     *   if (a === b) { return 0; }
+     * }).toJS();
+     * // { a: 1, b: 2, c: 3 }
+     * ```
      */
     sort(comparator?: (valueA: V, valueB: V) => number): /*this*/Iterable<K, V>;
 
@@ -2024,7 +2224,7 @@ declare module Immutable {
      *
      */
     sortBy<C>(
-      comparatorValueMapper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => C,
+      comparatorValueMapper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => C,
       comparator?: (valueA: C, valueB: C) => number
     ): /*this*/Iterable<K, V>;
 
@@ -2033,9 +2233,13 @@ declare module Immutable {
      * value of the `grouper` function.
      *
      * Note: This is always an eager operation.
+     *
+     *     Immutable.fromJS([{v: 0}, {v: 1}, {v: 1}, {v: 0}, {v: 1}])
+     *       .groupBy(x => x.get('v'))
+     *       // Map {0: [{v: 0},{v: 0}], 1: [{v: 1},{v: 1},{v: 1}]}
      */
     groupBy<G>(
-      grouper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => G,
+      grouper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => G,
       context?: any
     ): /*Map*/Seq.Keyed<G, /*this*/Iterable<K, V>>;
 
@@ -2050,7 +2254,7 @@ declare module Immutable {
      * (including the last iteration which returned false).
      */
     forEach(
-      sideEffect: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => any,
+      sideEffect: (value: V, key: K, iter: /*this*/Iterable<K, V>) => any,
       context?: any
     ): number;
 
@@ -2109,7 +2313,7 @@ declare module Immutable {
      *
      */
     skipWhile(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): /*this*/Iterable<K, V>;
 
@@ -2123,7 +2327,7 @@ declare module Immutable {
      *
      */
     skipUntil(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): /*this*/Iterable<K, V>;
 
@@ -2149,7 +2353,7 @@ declare module Immutable {
      *
      */
     takeWhile(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): /*this*/Iterable<K, V>;
 
@@ -2162,7 +2366,7 @@ declare module Immutable {
      *
      */
     takeUntil(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): /*this*/Iterable<K, V>;
 
@@ -2200,11 +2404,11 @@ declare module Immutable {
      * Similar to `iter.map(...).flatten(true)`.
      */
     flatMap<MK, MV>(
-      mapper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => Iterable<MK, MV>,
+      mapper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => Iterable<MK, MV>,
       context?: any
     ): /*this*/Iterable<MK, MV>;
     flatMap<MK, MV>(
-      mapper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => /*iterable-like*/any,
+      mapper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => /*iterable-like*/any,
       context?: any
     ): /*this*/Iterable<MK, MV>;
 
@@ -2221,7 +2425,7 @@ declare module Immutable {
      * @see `Array#reduce`.
      */
     reduce<R>(
-      reducer: (reduction?: R, value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => R,
+      reducer: (reduction: R, value: V, key: K, iter: /*this*/Iterable<K, V>) => R,
       initialReduction?: R,
       context?: any
     ): R;
@@ -2233,7 +2437,7 @@ declare module Immutable {
      * with `Array#reduceRight`.
      */
     reduceRight<R>(
-      reducer: (reduction?: R, value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => R,
+      reducer: (reduction: R, value: V, key: K, iter: /*this*/Iterable<K, V>) => R,
       initialReduction?: R,
       context?: any
     ): R;
@@ -2242,7 +2446,7 @@ declare module Immutable {
      * True if `predicate` returns true for all entries in the Iterable.
      */
     every(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): boolean;
 
@@ -2250,7 +2454,7 @@ declare module Immutable {
      * True if `predicate` returns true for any entry in the Iterable.
      */
     some(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): boolean;
 
@@ -2280,7 +2484,7 @@ declare module Immutable {
      */
     count(): number;
     count(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any
     ): number;
 
@@ -2291,7 +2495,7 @@ declare module Immutable {
      * Note: This is not a lazy operation.
      */
     countBy<G>(
-      grouper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => G,
+      grouper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => G,
       context?: any
     ): Map<G, number>;
 
@@ -2302,7 +2506,7 @@ declare module Immutable {
      * Returns the first value for which the `predicate` returns true.
      */
     find(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any,
       notSetValue?: V
     ): V;
@@ -2313,7 +2517,7 @@ declare module Immutable {
      * Note: `predicate` will be called for each entry in reverse.
      */
     findLast(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any,
       notSetValue?: V
     ): V;
@@ -2322,7 +2526,7 @@ declare module Immutable {
      * Returns the first [key, value] entry for which the `predicate` returns true.
      */
     findEntry(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any,
       notSetValue?: V
     ): /*[K, V]*/Array<any>;
@@ -2334,7 +2538,7 @@ declare module Immutable {
      * Note: `predicate` will be called for each entry in reverse.
      */
     findLastEntry(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable<K, V>) => boolean,
       context?: any,
       notSetValue?: V
     ): /*[K, V]*/Array<any>;
@@ -2343,7 +2547,7 @@ declare module Immutable {
      * Returns the key for which the `predicate` returns true.
      */
     findKey(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable.Keyed<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable.Keyed<K, V>) => boolean,
       context?: any
     ): K;
 
@@ -2353,7 +2557,7 @@ declare module Immutable {
      * Note: `predicate` will be called for each entry in reverse.
      */
     findLastKey(
-      predicate: (value?: V, key?: K, iter?: /*this*/Iterable.Keyed<K, V>) => boolean,
+      predicate: (value: V, key: K, iter: /*this*/Iterable.Keyed<K, V>) => boolean,
       context?: any
     ): K;
 
@@ -2392,7 +2596,7 @@ declare module Immutable {
      *
      */
     maxBy<C>(
-      comparatorValueMapper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => C,
+      comparatorValueMapper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => C,
       comparator?: (valueA: C, valueB: C) => number
     ): V;
 
@@ -2421,7 +2625,7 @@ declare module Immutable {
      *
      */
     minBy<C>(
-      comparatorValueMapper: (value?: V, key?: K, iter?: /*this*/Iterable<K, V>) => C,
+      comparatorValueMapper: (value: V, key: K, iter: /*this*/Iterable<K, V>) => C,
       comparator?: (valueA: C, valueB: C) => number
     ): V;
 
