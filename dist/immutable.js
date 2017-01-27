@@ -11,7 +11,7 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
 	(factory((global.Immutable = {})));
-}(this, function (exports) { 'use strict';var SLICE$0 = Array.prototype.slice;
+}(this, function (exports) { 'use strict';var SLICE$0 = Array.prototype.slice;var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function ITER$0(v,f){if(v){if(Array.isArray(v))return f?v.slice():v;var i,r;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){i=f.call(v);r=[];}else if((v+'')==='[object Generator]'){i=v;r=[];};if(S_MARK$0)S_MARK$0(void 0);if(r) {while((f=i['next']()),f['done']!==true)r.push(f['value']);return r;}}throw new Error(v+' is not iterable')};
 
 	function createClass(ctor, superClass) {
 	  if (superClass) {
@@ -1368,6 +1368,20 @@
 	    return this.__altered;
 	  };
 
+	  Map.prototype.diffFrom = function(otherMap) {
+	    var added = []
+	    var removed = []
+	    var updated = []
+
+	    processDiffForEquivalentNodes(otherMap._root, this._root, added, removed, updated)
+
+	    return {
+	      added: Map(added),
+	      removed: Map(removed),
+	      updated: Map(updated),
+	    }
+	  };
+
 	  Map.prototype.__iterator = function(type, reverse) {
 	    return new MapIterator(this, type, reverse);
 	  };
@@ -1475,6 +1489,11 @@
 	    return new ArrayMapNode(ownerID, newEntries);
 	  };
 
+	  ArrayMapNode.prototype.collectAllEntries = function(collectingArray) {
+	    collectingArray.push.apply(collectingArray, ITER$0(this.entries));
+	    return collectingArray;
+	  };
+
 
 
 
@@ -1544,6 +1563,28 @@
 	    return new BitmapIndexedNode(ownerID, newBitmap, newNodes);
 	  };
 
+	  BitmapIndexedNode.prototype.getHashRanges = function() {
+	    var bitmap = this.bitmap
+	    var hashRanges = []
+	    var hash = 0
+	    var position = 0
+	    while (bitmap !== 0) {
+	      if (bitmap & 1 === 1) {
+	        var subNode = this.nodes[position]
+	        hashRanges.push({ hash: hash, node: subNode })
+	        position += 1
+	      }
+	      bitmap = bitmap >>> 1
+	      hash++
+	    }
+	    return hashRanges
+	  };
+
+	  BitmapIndexedNode.prototype.collectAllEntries = function(collectingArray) {
+	    this.nodes.forEach(function(node ) {return (!!node) && node.collectAllEntries(collectingArray)});
+	    return collectingArray;
+	  };
+
 
 
 
@@ -1600,6 +1641,18 @@
 	    }
 
 	    return new HashArrayMapNode(ownerID, newCount, newNodes);
+	  };
+
+	  HashArrayMapNode.prototype.getHashRanges = function() {
+	    return this.nodes
+	      .map(function(node, i)  {return [node, i]} )
+	      .filter(function(i)  {var node = i[0], i = i[1];return !!node})
+	      .map(function(i)  {var node = i[0], i = i[1];return { hash: i, node: node }} )
+	  };
+
+	  HashArrayMapNode.prototype.collectAllEntries = function(collectingArray) {
+	    this.nodes.forEach(function(node ) {return (!!node) && node.collectAllEntries(collectingArray)});
+	    return collectingArray;
 	  };
 
 
@@ -1678,6 +1731,11 @@
 	    return new HashCollisionNode(ownerID, this.keyHash, newEntries);
 	  };
 
+	  HashCollisionNode.prototype.collectAllEntries = function(collectingArray) {
+	    collectingArray.push.apply(collectingArray, ITER$0(this.entries));
+	    return collectingArray;
+	  };
+
 
 
 
@@ -1715,6 +1773,11 @@
 
 	    SetRef(didChangeSize);
 	    return mergeIntoNode(this, ownerID, shift, hash(key), [key, value]);
+	  };
+
+	  ValueNode.prototype.collectAllEntries = function(collectingArray) {
+	    collectingArray.push(this.entry);
+	    return collectingArray;
 	  };
 
 
@@ -2044,6 +2107,82 @@
 	var MAX_ARRAY_MAP_SIZE = SIZE / 4;
 	var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
 	var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
+
+	function processAllEntries(node1, node2, added, removed, updated) {
+	  var allEntries1 = node1 ? node1.collectAllEntries([]) : []
+	  var allEntries2 = node2 ? node2.collectAllEntries([]) : []
+
+	  var keyToValue1 = {}
+	  var keyToValue2 = {}
+
+	  allEntries1.forEach(function(value)  {var key = value[0], value = value[1];
+	    keyToValue1[key] = value
+	  })
+
+	  allEntries2.forEach(function(value)  {var key = value[0], value = value[1];
+	    keyToValue2[key] = value
+	  })
+
+	  allEntries2.forEach(function(value)  {var key = value[0], value = value[1];
+	    var prev = keyToValue1[key]
+	    if (prev === undefined) {
+	      added.push([key, value])
+	    } else if (prev !== value) {
+	      updated.push([key, { prev: prev, next: value }])
+	    }
+	  })
+
+	  allEntries1.forEach(function(value)  {var key = value[0], value = value[1];
+	    if (keyToValue2[key] === undefined) {
+	      removed.push([key, value])
+	    }
+	  })
+	}
+
+	function processDiffForEquivalentNodes(node1, node2, added, removed, updated) {
+	  if (node1 === node2) {
+	    // The equivalent nodes in boths tries are the same node — no need to diff further
+	    return
+	  }
+
+	  var hashRanges1 = (node1 && node1.getHashRanges) ?
+	    node1.getHashRanges() : undefined;
+	  var hashRanges2 = (node2 && node2.getHashRanges) ?
+	    node2.getHashRanges() : undefined;
+
+	  if (!hashRanges1 || !hashRanges2) {
+	    return processAllEntries(node1, node2, added, removed, updated)
+	  }
+
+	  // Double pointer walk
+	  var hashIndex1 = 0
+	  var hashIndex2 = 0
+	  while (hashIndex1 < hashRanges1.length && hashIndex2 < hashRanges2.length) {
+	    var subNode1 = (hash1 = hashRanges1[hashIndex1]).node, hash1 = hash1.hash
+	    var subNode2 = (hash2 = hashRanges2[hashIndex2]).node, hash2 = hash2.hash
+	    if (hash1 < hash2) {
+	      processAllEntries(subNode1, undefined, added, removed, updated)
+	      hashIndex1 += 1
+	    } else if (hash2 < hash1) {
+	      processAllEntries(undefined, subNode2, added, removed, updated)
+	      hashIndex2 += 1
+	    } else {
+	      processDiffForEquivalentNodes(subNode1, subNode2, added, removed, updated)
+	      hashIndex1 += 1
+	      hashIndex2 += 1
+	    }
+	  }
+	  while (hashIndex1 < hashRanges1.length) {
+	    var subNode1$0 = (hashRanges1[hashIndex1]).node
+	    processAllEntries(subNode1$0, undefined, added, removed, updated)
+	    hashIndex1 += 1
+	  }
+	  while (hashIndex2 < hashRanges2.length) {
+	    var subNode2$0 = (hashRanges2[hashIndex2]).node
+	    processAllEntries(undefined, subNode2$0, added, removed, updated)
+	    hashIndex2 += 1
+	  }
+	}
 
 	createClass(List, IndexedCollection);
 
@@ -3914,6 +4053,16 @@
 	  Set.prototype.wasAltered = function() {
 	    return this._map.wasAltered();
 	  };
+
+	  Set.prototype.diffFrom = function(otherSet) {
+	    var added = (removed = this._map.diffFrom(otherSet._map)).added, removed = removed.removed
+
+	    return {
+	      added: added.keySeq().toSet(),
+	      removed: removed.keySeq().toSet(),
+	    }
+	  };
+
 
 	  Set.prototype.__iterate = function(fn, reverse) {var this$0 = this;
 	    return this._map.__iterate(function(_, k)  {return fn(k, k, this$0)}, reverse);
