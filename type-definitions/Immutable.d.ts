@@ -911,7 +911,7 @@ declare module Immutable {
     asImmutable(): this;
   }
 
-  export interface ShapedMap<S, K extends keyof S> extends Collection.Keyed<K, S[any]> {
+  export interface ShapedMap<S> extends Collection.Keyed<keyof S, S[keyof S]> {
 
     // Persistent changes
 
@@ -930,7 +930,7 @@ declare module Immutable {
      */
     set<L extends keyof S>(key: L, value: S[L]): this;
 
-    get<L extends keyof S>(key: L) : S[L];
+    get<L extends keyof S, P extends S[L]>(key: L, notSetValue?: P) : P;
 
     /**
      * Returns a new Map which excludes this `key`.
@@ -1028,8 +1028,8 @@ declare module Immutable {
      *     y.merge(x) // { b: 20, a: 10, d: 60, c: 30 }
      *
      */
-    merge(...iterables: Iterable<K, S[K]>[]): this;
-    merge(...iterables: {[key: string]: S[K]}[]): this;
+    merge(...iterables: Iterable<keyof S, S[keyof S]>[]): this;
+    merge(...iterables: Partial<S>[]): this;
 
     /**
      * Like `merge()`, `mergeWith()` returns a new Map resulting from merging
@@ -1043,13 +1043,13 @@ declare module Immutable {
      *
      */
     mergeWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: Iterable<K, S[K]>[]
+      merger: <L extends keyof S>(previous: S[L], next: S[L], key: L) => S[L],
+      ...iterables: Iterable<keyof S, S[keyof S]>[]
     ): this;
     mergeWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      merger: <L extends keyof S>(previous: S[L], next: S[L], key: L) => S[L],
+      ...iterables: Partial<S>[]
+    ): this;
 
     /**
      * Like `merge()`, but when two Iterables conflict, it merges them as well,
@@ -1060,8 +1060,8 @@ declare module Immutable {
      *     x.mergeDeep(y) // {a: { x: 2, y: 10 }, b: { x: 20, y: 5 }, c: { z: 3 } }
      *
      */
-    mergeDeep(...iterables: Iterable<K, S[K]>[]): this;
-    mergeDeep(...iterables: {[key: string]: S[K]}[]): Map<string, S[K]>;
+    mergeDeep(...iterables: Iterable<keyof S, S[keyof S]>[]): this;
+    mergeDeep(...iterables: Partial<S>[]): this;
 
     /**
      * Like `mergeDeep()`, but when two non-Iterables conflict, it uses the
@@ -1074,13 +1074,13 @@ declare module Immutable {
      *
      */
     mergeDeepWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: Iterable<K, S[K]>[]
+      merger: (previous: any, next: any, key: any) => any,
+      ...iterables: Iterable<keyof S, S[keyof S]>[]
     ): this;
     mergeDeepWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      merger: (previous: any, next: any, key: any) => any,
+      ...iterables: Partial<S>[]
+    ): this;
 
 
     // Deep persistent changes
@@ -1176,16 +1176,16 @@ declare module Immutable {
      */
     mergeIn(
       keyPath: Iterable<any, any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeIn(
       keyPath: Array<any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeIn(
       keyPath: Array<any>,
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      ...iterables: {[key: string]: any}[]
+    ): this;
 
     /**
      * A combination of `updateIn` and `mergeDeep`, returning a new Map, but
@@ -1198,16 +1198,16 @@ declare module Immutable {
      */
     mergeDeepIn(
       keyPath: Iterable<any, any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeDeepIn(
       keyPath: Array<any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeDeepIn(
       keyPath: Array<any>,
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      ...iterables: {[key: string]: any}[]
+    ): this;
 
 
     // Transient changes
@@ -1667,12 +1667,12 @@ declare module Immutable {
   export module Record {
     export interface Class<L extends {[key: string]: any}> {
       new (): Map<string, any>;
-      new (values: L): ShapedMap<L, string>;
-      new (values: Iterable<string, any>): ShapedMap<L, string>; // deprecated
+      new (values: L): ShapedMap<L>;
+      new (values: Iterable<keyof L, L[keyof L]>): ShapedMap<L>; // deprecated
 
-      (): ShapedMap<L, string>;
-      (values: {[key: string]: any}): ShapedMap<L, string>;
-      (values: Iterable<string, any>): ShapedMap<L, string>; // deprecated
+      (): ShapedMap<L>;
+      (values: {[key: string]: any}): ShapedMap<L>;
+      (values: Iterable<string, any>): ShapedMap<L>; // deprecated
     }
   }
 
