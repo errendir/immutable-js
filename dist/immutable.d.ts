@@ -919,7 +919,7 @@ declare module Immutable {
     updated: Map<K, {prev: V, next: V} >;
   }
 
-  export interface ShapedMap<S, K extends keyof S> extends Collection.Keyed<K, S[any]> {
+  export interface ShapedMap<S> extends Collection.Keyed<keyof S, S[keyof S]> {
 
     // Persistent changes
 
@@ -938,186 +938,67 @@ declare module Immutable {
      */
     set<L extends keyof S>(key: L, value: S[L]): this;
 
-    get<L extends keyof S>(key: L) : S[L];
+    get<L extends keyof S, M extends S[L]>(key: L, notSetValue?: M) : M;
 
     /**
-     * Returns a new Map which excludes this `key`.
-     *
-     * Note: `delete` cannot be safely used in IE8, but is provided to mirror
-     * the ES6 collection API.
-     * @alias remove
-     *
-     * ```js
-     * Immutable.Map({
-     *   key: 'value',
-     *   otherKey: 'other value'
-     * }).delete('otherKey').toJS();
-     * // { key: 'value' }
-     * ```
+     * @see `Map#delete`
      */
     delete<L extends keyof S>(key: L): this;
     remove<L extends keyof S>(key: L): this;
 
     /**
-     * Returns a new Map containing no keys or values.
-     *
-     * ```js
-     * Immutable.Map({ key: 'value' }).clear().toJS();
-     * // {}
-     * ```
+     * @see `Map#clear`
      */
     clear(): this;
 
     /**
-     * Returns a new Map having updated the value at this `key` with the return
-     * value of calling `updater` with the existing value, or `notSetValue` if
-     * the key was not set. If called with only a single argument, `updater` is
-     * called with the Map itself.
-     *
-     * Equivalent to: `map.set(key, updater(map.get(key, notSetValue)))`.
-     *
-     * ```js
-     * const originalMap = Immutable.Map({
-     *   key: 'value',
-     *   subObject: { subKey: 'subValue' }
-     * });
-     *
-     * const newMap = originalMap.update(map => {
-     *   return Immutable.Map(map.get('subObject'));
-     * });
-     * newMap.toJS(); // { subKey: 'subValue' }
-     * ```
-     *
-     * ```js
-     * const originalMap = Immutable.Map({
-     *   key: 'value'
-     * });
-
-     * const newMap = originalMap.update('key', value => {
-     *   return value + value;
-     * });
-     * newMap.toJS(); // { key: 'valuevalue' }
-     * ```
-     *
-     * ```js
-     * const originalMap = Immutable.Map({
-     *   key: 'value'
-     * });
-
-     * let newMap = originalMap.update('noKey', 'no value', value => {
-     *   return value + value;
-     * });
-     * newMap.toJS(); // { key: 'value', noKey: 'no valueno value' }
-     *
-     * newMap = originalMap.update('key', 'no value', value => {
-     *   return value + value;
-     * });
-     * newMap.toJS(); // { key: 'valuevalue' }
-     * ```
+     * @see `Map#update`
      */
     update(updater: (value: this) => this): this;
     update<L extends keyof S>(key: L, updater: (value: S[L]) => S[L]): this;
     update<L extends keyof S>(key: L, notSetValue: S[L], updater: (value: S[L]) => S[L]): this;
 
     /**
-     * Returns a new Map resulting from merging the provided Iterables
-     * (or JS objects) into this Map. In other words, this takes each entry of
-     * each iterable and sets it on this Map.
-     *
-     * If any of the values provided to `merge` are not Iterable (would return
-     * false for `Immutable.Iterable.isIterable`) then they are deeply converted
-     * via `Immutable.fromJS` before being merged. However, if the value is an
-     * Iterable but includes non-iterable JS objects or arrays, those nested
-     * values will be preserved.
-     *
-     *     var x = Immutable.Map({a: 10, b: 20, c: 30});
-     *     var y = Immutable.Map({b: 40, a: 50, d: 60});
-     *     x.merge(y) // { a: 50, b: 40, c: 30, d: 60 }
-     *     y.merge(x) // { b: 20, a: 10, d: 60, c: 30 }
-     *
+     * @see `Map#merge`
      */
-    merge(...iterables: Iterable<K, S[K]>[]): this;
-    merge(...iterables: {[key: string]: S[K]}[]): this;
+    merge(...iterables: Iterable<keyof S, S[keyof S]>[]): this;
+    merge(...iterables: Partial<S>[]): this;
 
     /**
-     * Like `merge()`, `mergeWith()` returns a new Map resulting from merging
-     * the provided Iterables (or JS objects) into this Map, but uses the
-     * `merger` function for dealing with conflicts.
-     *
-     *     var x = Immutable.Map({a: 10, b: 20, c: 30});
-     *     var y = Immutable.Map({b: 40, a: 50, d: 60});
-     *     x.mergeWith((prev, next) => prev / next, y) // { a: 0.2, b: 0.5, c: 30, d: 60 }
-     *     y.mergeWith((prev, next) => prev / next, x) // { b: 2, a: 5, d: 60, c: 30 }
-     *
+     * @see `Map#mergeWith`
      */
     mergeWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: Iterable<K, S[K]>[]
+      merger: <L extends keyof S>(previous: S[L], next: S[L], key: L) => S[L],
+      ...iterables: Iterable<keyof S, S[keyof S]>[]
     ): this;
     mergeWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      merger: <L extends keyof S>(previous: S[L], next: S[L], key: L) => S[L],
+      ...iterables: Partial<S>[]
+    ): this;
 
     /**
-     * Like `merge()`, but when two Iterables conflict, it merges them as well,
-     * recursing deeply through the nested data.
-     *
-     *     var x = Immutable.fromJS({a: { x: 10, y: 10 }, b: { x: 20, y: 50 } });
-     *     var y = Immutable.fromJS({a: { x: 2 }, b: { y: 5 }, c: { z: 3 } });
-     *     x.mergeDeep(y) // {a: { x: 2, y: 10 }, b: { x: 20, y: 5 }, c: { z: 3 } }
-     *
+     * @see `Map#mergeDeep`
      */
-    mergeDeep(...iterables: Iterable<K, S[K]>[]): this;
-    mergeDeep(...iterables: {[key: string]: S[K]}[]): Map<string, S[K]>;
+    mergeDeep(...iterables: Iterable<keyof S, S[keyof S]>[]): this;
+    mergeDeep(...iterables: Partial<S>[]): this;
 
     /**
-     * Like `mergeDeep()`, but when two non-Iterables conflict, it uses the
-     * `merger` function to determine the resulting value.
-     *
-     *     var x = Immutable.fromJS({a: { x: 10, y: 10 }, b: { x: 20, y: 50 } });
-     *     var y = Immutable.fromJS({a: { x: 2 }, b: { y: 5 }, c: { z: 3 } });
-     *     x.mergeDeepWith((prev, next) => prev / next, y)
-     *     // {a: { x: 5, y: 10 }, b: { x: 20, y: 10 }, c: { z: 3 } }
-     *
+     * @see `Map#mergeDeepWith`
      */
     mergeDeepWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: Iterable<K, S[K]>[]
+      merger: (previous: any, next: any, key: any) => any,
+      ...iterables: Iterable<keyof S, S[keyof S]>[]
     ): this;
     mergeDeepWith(
-      merger: (previous: S[K], next: S[K], key: K) => S[K],
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      merger: (previous: any, next: any, key: any) => any,
+      ...iterables: Partial<S>[]
+    ): this;
 
 
     // Deep persistent changes
 
     /**
-     * Returns a new Map having set `value` at this `keyPath`. If any keys in
-     * `keyPath` do not exist, a new immutable Map will be created at that key.
-     *
-     * ```js
-     * const originalMap = Immutable.fromJS({
-     *   subObject: {
-     *     subKey: 'subvalue',
-     *     subSubObject: {
-     *       subSubKey: 'subSubValue'
-     *     }
-     *   }
-     * });
-
-     * const newMap = originalMap.setIn(['subObject', 'subKey'], 'ha ha!');
-     * newMap.toJS();
-     * // {subObject:{subKey:'ha ha!', subSubObject:{subSubKey:'subSubValue'}}}
-     *
-     * const newerMap = originalMap.setIn(
-     *   ['subObject', 'subSubObject', 'subSubKey'],
-     *   'ha ha ha!'
-     * );
-     * newerMap.toJS();
-     * // {subObject:{subKey:'subvalue', subSubObject:{subSubKey:'ha ha ha!'}}}
-     * ```
+     * @see `Map#setIn`
      */
     setIn(keyPath: Array<any>, value: any): this;
     setIn(KeyPath: Iterable<any, any>, value: any): this;
@@ -1134,25 +1015,7 @@ declare module Immutable {
     removeIn(keyPath: Iterable<any, any>): this;
 
     /**
-     * Returns a new Map having applied the `updater` to the entry found at the
-     * keyPath.
-     *
-     * If any keys in `keyPath` do not exist, new Immutable `Map`s will
-     * be created at those keys. If the `keyPath` does not already contain a
-     * value, the `updater` function will be called with `notSetValue`, if
-     * provided, otherwise `undefined`.
-     *
-     *     var data = Immutable.fromJS({ a: { b: { c: 10 } } });
-     *     data = data.updateIn(['a', 'b', 'c'], val => val * 2);
-     *     // { a: { b: { c: 20 } } }
-     *
-     * If the `updater` function returns the same value it was called with, then
-     * no change will occur. This is still true if `notSetValue` is provided.
-     *
-     *     var data1 = Immutable.fromJS({ a: { b: { c: 10 } } });
-     *     data2 = data1.updateIn(['x', 'y', 'z'], 100, val => val);
-     *     assert(data2 === data1);
-     *
+     * @see `Map#updateIn`
      */
     updateIn(
       keyPath: Array<any>,
@@ -1174,97 +1037,52 @@ declare module Immutable {
     ): this;
 
     /**
-     * A combination of `updateIn` and `merge`, returning a new Map, but
-     * performing the merge at a point arrived at by following the keyPath.
-     * In other words, these two lines are equivalent:
-     *
-     *     x.updateIn(['a', 'b', 'c'], abc => abc.merge(y));
-     *     x.mergeIn(['a', 'b', 'c'], y);
-     *
+     * @see `Map#mergeIn`
      */
     mergeIn(
       keyPath: Iterable<any, any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeIn(
       keyPath: Array<any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeIn(
       keyPath: Array<any>,
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      ...iterables: {[key: string]: any}[]
+    ): this;
 
     /**
-     * A combination of `updateIn` and `mergeDeep`, returning a new Map, but
-     * performing the deep merge at a point arrived at by following the keyPath.
-     * In other words, these two lines are equivalent:
-     *
-     *     x.updateIn(['a', 'b', 'c'], abc => abc.mergeDeep(y));
-     *     x.mergeDeepIn(['a', 'b', 'c'], y);
-     *
+     * @see `Map#mergeDeepIn`
      */
     mergeDeepIn(
       keyPath: Iterable<any, any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeDeepIn(
       keyPath: Array<any>,
-      ...iterables: Iterable<K, S[K]>[]
+      ...iterables: Iterable<any, any>[]
     ): this;
     mergeDeepIn(
       keyPath: Array<any>,
-      ...iterables: {[key: string]: S[K]}[]
-    ): Map<string, S[K]>;
+      ...iterables: {[key: string]: any}[]
+    ): this;
 
 
     // Transient changes
 
     /**
-     * Every time you call one of the above functions, a new immutable Map is
-     * created. If a pure function calls a number of these to produce a final
-     * return value, then a penalty on performance and memory has been paid by
-     * creating all of the intermediate immutable Maps.
-     *
-     * If you need to apply a series of mutations to produce a new immutable
-     * Map, `withMutations()` creates a temporary mutable copy of the Map which
-     * can apply mutations in a highly performant manner. In fact, this is
-     * exactly how complex mutations like `merge` are done.
-     *
-     * As an example, this results in the creation of 2, not 4, new Maps:
-     *
-     *     var map1 = Immutable.Map();
-     *     var map2 = map1.withMutations(map => {
-     *       map.set('a', 1).set('b', 2).set('c', 3);
-     *     });
-     *     assert(map1.size === 0);
-     *     assert(map2.size === 3);
-     *
-     * Note: Not all methods can be used on a mutable collection or within
-     * `withMutations`! Only `set` and `merge` may be used mutatively.
-     *
+     * @see `Map#withMutations`
      */
     withMutations(mutator: (mutable: this) => any): this;
 
     /**
-     * Another way to avoid creation of intermediate Immutable maps is to create
-     * a mutable copy of this collection. Mutable copies *always* return `this`,
-     * and thus shouldn't be used for equality. Your function should never return
-     * a mutable copy of a collection, only use it internally to create a new
-     * collection. If possible, use `withMutations` as it provides an easier to
-     * use API.
-     *
-     * Note: if the collection is already mutable, `asMutable` returns itself.
-     *
-     * Note: Not all methods can be used on a mutable collection or within
-     * `withMutations`! Only `set` and `merge` may be used mutatively.
+     * @see `Map#asMutable`
      */
     asMutable(): this;
 
     /**
-     * The yin to `asMutable`'s yang. Because it applies to mutable collections,
-     * this operation is *mutable* and returns itself. Once performed, the mutable
-     * copy has become immutable and can be safely returned from a function.
+     * @see `Map#asImmutable`
      */
     asImmutable(): this;
   }
@@ -1681,12 +1499,12 @@ declare module Immutable {
   export module Record {
     export interface Class<L extends {[key: string]: any}> {
       new (): Map<string, any>;
-      new (values: L): ShapedMap<L, string>;
-      new (values: Iterable<string, any>): ShapedMap<L, string>; // deprecated
+      new (values: L): ShapedMap<L>;
+      new (values: Iterable<keyof L, L[keyof L]>): ShapedMap<L>; // deprecated
 
-      (): ShapedMap<L, string>;
-      (values: {[key: string]: any}): ShapedMap<L, string>;
-      (values: Iterable<string, any>): ShapedMap<L, string>; // deprecated
+      (): ShapedMap<L>;
+      (values: {[key: string]: any}): ShapedMap<L>;
+      (values: Iterable<string, any>): ShapedMap<L>; // deprecated
     }
   }
 
