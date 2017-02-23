@@ -1484,7 +1484,7 @@ declare module Immutable {
    */
   export module Record {
     export interface Class<L extends {[key: string]: any}> {
-      new (): Map<string, any>;
+      new (): ShapedMap<L>;
       new (values: L): ShapedMap<L>;
       new (values: Iterable<keyof L, L[keyof L]>): ShapedMap<L>; // deprecated
 
