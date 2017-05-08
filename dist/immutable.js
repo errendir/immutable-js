@@ -4071,7 +4071,13 @@
 	  };
 
 	  Set.prototype.diffFromCallbacks = function(otherSet, remove) {var add = remove.add, remove = remove.remove;
-	    this._map.diffFromCallbacks(otherSet._map, { add: add, remove: remove })
+	    this._map.diffFromCallbacks(
+	      otherSet._map, 
+	      { 
+	        add: function(value, key)  {return add(key)},
+	        remove: function(value, key)  {return remove(key)},
+	      }
+	    )
 	  };
 
 
