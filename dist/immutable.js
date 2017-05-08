@@ -1369,17 +1369,24 @@
 	  };
 
 	  Map.prototype.diffFrom = function(otherMap) {
-	    var added = []
-	    var removed = []
-	    var updated = []
+	    var added = Map().asMutable()
+	    var removed = Map().asMutable()
+	    var updated = Map().asMutable()
+	    var add = function(value, key)  {return added.set(key, value)}
+	    var remove = function(value, key)  {return added.remove(key)}
+	    var update = function(next, key)  {var prev = next.prev, next = next.next;return added.set(key, next)}
 
-	    processDiffForEquivalentNodes(otherMap._root, this._root, added, removed, updated)
+	    this.diffFromCallbacks(otherMap, { add: add, remove: remove, update: update })
 
 	    return {
-	      added: Map(added),
-	      removed: Map(removed),
-	      updated: Map(updated),
+	      added: added.asImmutable(),
+	      removed: removed.asImmutable(),
+	      updated: updated.asImmutable(),
 	    }
+	  };
+
+	  Map.prototype.diffFromCallbacks = function(otherMap, update) {var add = update.add, remove = update.remove, update = update.update;
+	    processDiffForEquivalentNodes(otherMap._root, this._root, add, remove, update)
 	  };
 
 	  Map.prototype.__iterator = function(type, reverse) {
@@ -2108,7 +2115,7 @@
 	var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
 	var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
-	function processAllEntries(node1, node2, added, removed, updated) {
+	function processAllEntries(node1, node2, add, remove, update) {
 	  var allEntries1 = node1 ? node1.collectAllEntries([]) : []
 	  var allEntries2 = node2 ? node2.collectAllEntries([]) : []
 
@@ -2126,20 +2133,20 @@
 	  allEntries2.forEach(function(value)  {var key = value[0], value = value[1];
 	    var prev = keyToValue1[key]
 	    if (prev === undefined) {
-	      added.push([key, value])
+	      add(value,key)
 	    } else if (prev !== value) {
-	      updated.push([key, { prev: prev, next: value }])
+	      update({ prev: prev, next: value }, key)
 	    }
 	  })
 
 	  allEntries1.forEach(function(value)  {var key = value[0], value = value[1];
 	    if (keyToValue2[key] === undefined) {
-	      removed.push([key, value])
+	      remove(value, key)
 	    }
 	  })
 	}
 
-	function processDiffForEquivalentNodes(node1, node2, added, removed, updated) {
+	function processDiffForEquivalentNodes(node1, node2, add, remove, update) {
 	  if (node1 === node2) {
 	    // The equivalent nodes in boths tries are the same node — no need to diff further
 	    return
@@ -2151,7 +2158,7 @@
 	    node2.getHashRanges() : undefined;
 
 	  if (!hashRanges1 || !hashRanges2) {
-	    return processAllEntries(node1, node2, added, removed, updated)
+	    return processAllEntries(node1, node2, add, remove, update)
 	  }
 
 	  // Double pointer walk
@@ -2161,25 +2168,25 @@
 	    var subNode1 = (hash1 = hashRanges1[hashIndex1]).node, hash1 = hash1.hash
 	    var subNode2 = (hash2 = hashRanges2[hashIndex2]).node, hash2 = hash2.hash
 	    if (hash1 < hash2) {
-	      processAllEntries(subNode1, undefined, added, removed, updated)
+	      processAllEntries(subNode1, undefined, add, remove, update)
 	      hashIndex1 += 1
 	    } else if (hash2 < hash1) {
-	      processAllEntries(undefined, subNode2, added, removed, updated)
+	      processAllEntries(undefined, subNode2, add, remove, update)
 	      hashIndex2 += 1
 	    } else {
-	      processDiffForEquivalentNodes(subNode1, subNode2, added, removed, updated)
+	      processDiffForEquivalentNodes(subNode1, subNode2, add, remove, update)
 	      hashIndex1 += 1
 	      hashIndex2 += 1
 	    }
 	  }
 	  while (hashIndex1 < hashRanges1.length) {
 	    var subNode1$0 = (hashRanges1[hashIndex1]).node
-	    processAllEntries(subNode1$0, undefined, added, removed, updated)
+	    processAllEntries(subNode1$0, undefined, add, remove, update)
 	    hashIndex1 += 1
 	  }
 	  while (hashIndex2 < hashRanges2.length) {
 	    var subNode2$0 = (hashRanges2[hashIndex2]).node
-	    processAllEntries(undefined, subNode2$0, added, removed, updated)
+	    processAllEntries(undefined, subNode2$0, add, remove, update)
 	    hashIndex2 += 1
 	  }
 	}
@@ -4061,6 +4068,10 @@
 	      added: added.keySeq().toSet(),
 	      removed: removed.keySeq().toSet(),
 	    }
+	  };
+
+	  Set.prototype.diffFromCallbacks = function(otherSet, remove) {var add = remove.add, remove = remove.remove;
+	    this._map.diffFromCallbacks(otherSet._map, { add: add, remove: remove })
 	  };
 
 
