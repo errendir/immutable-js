@@ -1373,8 +1373,8 @@
 	    var removed = Map().asMutable()
 	    var updated = Map().asMutable()
 	    var add = function(value, key)  {return added.set(key, value)}
-	    var remove = function(value, key)  {return added.remove(key)}
-	    var update = function(next, key)  {var prev = next.prev, next = next.next;return added.set(key, next)}
+	    var remove = function(value, key)  {return removed.set(key, value)}
+	    var update = function(prevNext, key)  {return updated.set(key, prevNext)}
 
 	    this.diffFromCallbacks(otherMap, { add: add, remove: remove, update: update })
 
