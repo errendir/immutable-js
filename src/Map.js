@@ -181,17 +181,24 @@ export class Map extends KeyedCollection {
   }
 
   diffFrom(otherMap) {
-    const added = []
-    const removed = []
-    const updated = []
+    const added = Map().asMutable()
+    const removed = Map().asMutable()
+    const updated = Map().asMutable()
+    const add = (value, key) => added.set(key, value)
+    const remove = (value, key) => removed.set(key, value)
+    const update = (prevNext, key) => updated.set(key, prevNext)
 
-    processDiffForEquivalentNodes(otherMap._root, this._root, added, removed, updated)
+    this.diffFromCallbacks(otherMap, { add, remove, update })
 
     return {
-      added: Map(added),
-      removed: Map(removed),
-      updated: Map(updated),
+      added: added.asImmutable(),
+      removed: removed.asImmutable(),
+      updated: updated.asImmutable(),
     }
+  }
+
+  diffFromCallbacks(otherMap, { add, remove, update }) {
+    processDiffForEquivalentNodes(otherMap._root, this._root, add, remove, update)
   }
 
   __iterator(type, reverse) {
@@ -920,7 +927,7 @@ var MAX_ARRAY_MAP_SIZE = SIZE / 4;
 var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
 var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
-function processAllEntries(node1, node2, added, removed, updated) {
+function processAllEntries(node1, node2, add, remove, update) {
   const allEntries1 = node1 ? node1.collectAllEntries([]) : []
   const allEntries2 = node2 ? node2.collectAllEntries([]) : []
 
@@ -938,20 +945,20 @@ function processAllEntries(node1, node2, added, removed, updated) {
   allEntries2.forEach(([key, value]) => {
     const prev = keyToValue1[key]
     if (prev === undefined) {
-      added.push([key, value])
+      add(value,key)
     } else if (prev !== value) {
-      updated.push([key, { prev, next: value }])
+      update({ prev, next: value }, key)
     }
   })
 
   allEntries1.forEach(([key, value]) => {
     if (keyToValue2[key] === undefined) {
-      removed.push([key, value])
+      remove(value, key)
     }
   })
 }
 
-function processDiffForEquivalentNodes(node1, node2, added, removed, updated) {
+function processDiffForEquivalentNodes(node1, node2, add, remove, update) {
   if (node1 === node2) {
     // The equivalent nodes in boths tries are the same node — no need to diff further
     return
@@ -963,7 +970,7 @@ function processDiffForEquivalentNodes(node1, node2, added, removed, updated) {
     node2.getHashRanges() : undefined;
 
   if (!hashRanges1 || !hashRanges2) {
-    return processAllEntries(node1, node2, added, removed, updated)
+    return processAllEntries(node1, node2, add, remove, update)
   }
 
   // Double pointer walk
@@ -973,25 +980,25 @@ function processDiffForEquivalentNodes(node1, node2, added, removed, updated) {
     const { node: subNode1, hash: hash1 } = hashRanges1[hashIndex1]
     const { node: subNode2, hash: hash2 } = hashRanges2[hashIndex2]
     if (hash1 < hash2) {
-      processAllEntries(subNode1, undefined, added, removed, updated)
+      processAllEntries(subNode1, undefined, add, remove, update)
       hashIndex1 += 1
     } else if (hash2 < hash1) {
-      processAllEntries(undefined, subNode2, added, removed, updated)
+      processAllEntries(undefined, subNode2, add, remove, update)
       hashIndex2 += 1
     } else {
-      processDiffForEquivalentNodes(subNode1, subNode2, added, removed, updated)
+      processDiffForEquivalentNodes(subNode1, subNode2, add, remove, update)
       hashIndex1 += 1
       hashIndex2 += 1
     }
   }
   while (hashIndex1 < hashRanges1.length) {
     const { node: subNode1 } = hashRanges1[hashIndex1]
-    processAllEntries(subNode1, undefined, added, removed, updated)
+    processAllEntries(subNode1, undefined, add, remove, update)
     hashIndex1 += 1
   }
   while (hashIndex2 < hashRanges2.length) {
     const { node: subNode2 } = hashRanges2[hashIndex2]
-    processAllEntries(undefined, subNode2, added, removed, updated)
+    processAllEntries(undefined, subNode2, add, remove, update)
     hashIndex2 += 1
   }
 }
