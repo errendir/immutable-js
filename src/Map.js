@@ -185,8 +185,8 @@ export class Map extends KeyedCollection {
     const removed = Map().asMutable()
     const updated = Map().asMutable()
     const add = (value, key) => added.set(key, value)
-    const remove = (value, key) => added.remove(key)
-    const update = ({ prev, next }, key) => added.set(key, next)
+    const remove = (value, key) => removed.set(key, value)
+    const update = (prevNext, key) => updated.set(key, prevNext)
 
     this.diffFromCallbacks(otherMap, { add, remove, update })
 
