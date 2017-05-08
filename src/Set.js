@@ -141,7 +141,7 @@ export class Set extends SetCollection {
     }
   }
 
-  diffFromCallbacks(otherMap, { add, remove }) {
+  diffFromCallbacks(otherSet, { add, remove }) {
     this._map.diffFromCallbacks(otherSet._map, { add, remove })
   }
 
