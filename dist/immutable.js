@@ -11,7 +11,7 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
 	(factory((global.Immutable = {})));
-}(this, function (exports) { 'use strict';var SLICE$0 = Array.prototype.slice;var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function ITER$0(v,f){if(v){if(Array.isArray(v))return f?v.slice():v;var i,r;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){i=f.call(v);r=[];}else if((v+'')==='[object Generator]'){i=v;r=[];};if(S_MARK$0)S_MARK$0(void 0);if(r) {while((f=i['next']()),f['done']!==true)r.push(f['value']);return r;}}throw new Error(v+' is not iterable')};
+}(this, function (exports) { 'use strict';var SLICE$0 = Array.prototype.slice;
 
 	function createClass(ctor, superClass) {
 	  if (superClass) {
@@ -1497,7 +1497,7 @@
 	  };
 
 	  ArrayMapNode.prototype.collectAllEntries = function(collectingArray) {
-	    collectingArray.push.apply(collectingArray, ITER$0(this.entries));
+	    Array.prototype.push.apply(collectingArray, this.entries);
 	    return collectingArray;
 	  };
 
@@ -1652,9 +1652,8 @@
 
 	  HashArrayMapNode.prototype.getHashRanges = function() {
 	    return this.nodes
-	      .map(function(node, i)  {return [node, i]} )
-	      .filter(function(i)  {var node = i[0], i = i[1];return !!node})
-	      .map(function(i)  {var node = i[0], i = i[1];return { hash: i, node: node }} )
+	      .map(function(node, i)  {return { hash: i, node: node }} )
+	      .filter(function(node)  {var node = node.node;return !!node})
 	  };
 
 	  HashArrayMapNode.prototype.collectAllEntries = function(collectingArray) {
@@ -1739,7 +1738,7 @@
 	  };
 
 	  HashCollisionNode.prototype.collectAllEntries = function(collectingArray) {
-	    collectingArray.push.apply(collectingArray, ITER$0(this.entries));
+	    Array.prototype.push.apply(collectingArray, this.entries);
 	    return collectingArray;
 	  };
 
