@@ -309,7 +309,7 @@ class ArrayMapNode {
   }
 
   collectAllEntries(collectingArray) {
-    collectingArray.push(...this.entries);
+    Array.prototype.push.apply(collectingArray, this.entries);
     return collectingArray;
   }
 }
@@ -464,9 +464,8 @@ class HashArrayMapNode {
 
   getHashRanges() {
     return this.nodes
-      .map((node, i) => ([node, i]))
-      .filter(([node, i]) => !!node)
-      .map(([node, i]) => ({ hash: i, node }))
+      .map((node, i) => ({ hash: i, node }))
+      .filter(({ node }) => !!node)
   }
 
   collectAllEntries(collectingArray) {
@@ -551,7 +550,7 @@ class HashCollisionNode {
   }
 
   collectAllEntries(collectingArray) {
-    collectingArray.push(...this.entries);
+    Array.prototype.push.apply(collectingArray, this.entries);
     return collectingArray;
   }
 }
