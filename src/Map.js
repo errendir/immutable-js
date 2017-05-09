@@ -927,8 +927,22 @@ var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
 var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
 function processAllEntries(node1, node2, add, remove, update) {
-  const allEntries1 = node1 ? node1.collectAllEntries([]) : []
-  const allEntries2 = node2 ? node2.collectAllEntries([]) : []
+  if(!node1) {
+    node2.collectAllEntries([]).forEach(([key, value]) => {
+      add(value,key)
+    })
+    return
+  }
+
+  if(!node2) {
+    node1.collectAllEntries([]).forEach(([key, value]) => {
+      remove(value,key)
+    })
+    return
+  }
+
+  const allEntries1 = node1.collectAllEntries([])
+  const allEntries2 = node2.collectAllEntries([])
 
   const keyToValue1 = {}
   const keyToValue2 = {}
