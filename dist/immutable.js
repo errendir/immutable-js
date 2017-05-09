@@ -2115,8 +2115,22 @@
 	var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
 	function processAllEntries(node1, node2, add, remove, update) {
-	  var allEntries1 = node1 ? node1.collectAllEntries([]) : []
-	  var allEntries2 = node2 ? node2.collectAllEntries([]) : []
+	  if(!node1) {
+	    node2.collectAllEntries([]).forEach(function(value)  {var key = value[0], value = value[1];
+	      add(value,key)
+	    })
+	    return
+	  }
+
+	  if(!node2) {
+	    node1.collectAllEntries([]).forEach(function(value)  {var key = value[0], value = value[1];
+	      remove(value,key)
+	    })
+	    return
+	  }
+
+	  var allEntries1 = node1.collectAllEntries([])
+	  var allEntries2 = node2.collectAllEntries([])
 
 	  var keyToValue1 = {}
 	  var keyToValue2 = {}
