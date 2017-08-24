@@ -211,24 +211,30 @@ export class Map extends KeyedCollection {
   }
 
   diffFrom(otherMap) {
-    const added = Map().asMutable()
-    const removed = Map().asMutable()
-    const updated = Map().asMutable()
-    const add = (value, key) => added.set(key, value)
-    const remove = (value, key) => removed.set(key, value)
-    const update = (prevNext, key) => updated.set(key, prevNext)
+    const added = Map().asMutable();
+    const removed = Map().asMutable();
+    const updated = Map().asMutable();
+    const add = (value, key) => added.set(key, value);
+    const remove = (value, key) => removed.set(key, value);
+    const update = (prevNext, key) => updated.set(key, prevNext);
 
-    this.diffFromCallbacks(otherMap, { add, remove, update })
+    this.diffFromCallbacks(otherMap, { add, remove, update });
 
     return {
       added: added.asImmutable(),
       removed: removed.asImmutable(),
-      updated: updated.asImmutable(),
-    }
+      updated: updated.asImmutable()
+    };
   }
 
   diffFromCallbacks(otherMap, { add, remove, update }) {
-    processDiffForEquivalentNodes(otherMap._root, this._root, add, remove, update)
+    processDiffForEquivalentNodes(
+      otherMap._root,
+      this._root,
+      add,
+      remove,
+      update
+    );
   }
 
   __iterator(type, reverse) {
@@ -439,24 +445,26 @@ class BitmapIndexedNode {
   }
 
   getHashRanges() {
-    let bitmap = this.bitmap
-    const hashRanges = []
-    let hash = 0
-    let position = 0
+    let bitmap = this.bitmap;
+    const hashRanges = [];
+    let hash = 0;
+    let position = 0;
     while (bitmap !== 0) {
       if (bitmap & 1 === 1) {
-        const subNode = this.nodes[position]
-        hashRanges.push({ hash, node: subNode })
-        position += 1
+        const subNode = this.nodes[position];
+        hashRanges.push({ hash, node: subNode });
+        position += 1;
       }
-      bitmap = bitmap >>> 1
-      hash++
+      bitmap = bitmap >>> 1;
+      hash++;
     }
-    return hashRanges
+    return hashRanges;
   }
 
   collectAllEntries(collectingArray) {
-    this.nodes.forEach(node => (!!node) && node.collectAllEntries(collectingArray));
+    this.nodes.forEach(
+      node => !!node && node.collectAllEntries(collectingArray)
+    );
     return collectingArray;
   }
 }
@@ -531,11 +539,13 @@ class HashArrayMapNode {
   getHashRanges() {
     return this.nodes
       .map((node, i) => ({ hash: i, node }))
-      .filter(({ node }) => !!node)
+      .filter(({ node }) => !!node);
   }
 
   collectAllEntries(collectingArray) {
-    this.nodes.forEach(node => (!!node) && node.collectAllEntries(collectingArray));
+    this.nodes.forEach(
+      node => !!node && node.collectAllEntries(collectingArray)
+    );
     return collectingArray;
   }
 }
@@ -1037,91 +1047,93 @@ const MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
 const MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
 function processAllEntries(node1, node2, add, remove, update) {
-  if(!node1) {
+  if (!node1) {
     node2.collectAllEntries([]).forEach(([key, value]) => {
-      add(value,key)
-    })
-    return
+      add(value, key);
+    });
+    return;
   }
 
-  if(!node2) {
+  if (!node2) {
     node1.collectAllEntries([]).forEach(([key, value]) => {
-      remove(value,key)
-    })
-    return
+      remove(value, key);
+    });
+    return;
   }
 
-  const allEntries1 = node1.collectAllEntries([])
-  const allEntries2 = node2.collectAllEntries([])
+  const allEntries1 = node1.collectAllEntries([]);
+  const allEntries2 = node2.collectAllEntries([]);
 
-  const keyToValue1 = {}
-  const keyToValue2 = {}
+  const keyToValue1 = {};
+  const keyToValue2 = {};
 
   allEntries1.forEach(([key, value]) => {
-    keyToValue1[key] = value
-  })
+    keyToValue1[key] = value;
+  });
 
   allEntries2.forEach(([key, value]) => {
-    keyToValue2[key] = value
-  })
+    keyToValue2[key] = value;
+  });
 
   allEntries2.forEach(([key, value]) => {
-    const prev = keyToValue1[key]
+    const prev = keyToValue1[key];
     if (prev === undefined) {
-      add(value,key)
+      add(value, key);
     } else if (prev !== value) {
-      update({ prev, next: value }, key)
+      update({ prev, next: value }, key);
     }
-  })
+  });
 
   allEntries1.forEach(([key, value]) => {
     if (keyToValue2[key] === undefined) {
-      remove(value, key)
+      remove(value, key);
     }
-  })
+  });
 }
 
 function processDiffForEquivalentNodes(node1, node2, add, remove, update) {
   if (node1 === node2) {
     // The equivalent nodes in boths tries are the same node — no need to diff further
-    return
+    return;
   }
 
-  const hashRanges1 = (node1 && node1.getHashRanges) ?
-    node1.getHashRanges() : undefined;
-  const hashRanges2 = (node2 && node2.getHashRanges) ?
-    node2.getHashRanges() : undefined;
+  const hashRanges1 = node1 && node1.getHashRanges
+    ? node1.getHashRanges()
+    : undefined;
+  const hashRanges2 = node2 && node2.getHashRanges
+    ? node2.getHashRanges()
+    : undefined;
 
   if (!hashRanges1 || !hashRanges2) {
-    return processAllEntries(node1, node2, add, remove, update)
+    return processAllEntries(node1, node2, add, remove, update);
   }
 
   // Double pointer walk
-  let hashIndex1 = 0
-  let hashIndex2 = 0
+  let hashIndex1 = 0;
+  let hashIndex2 = 0;
   while (hashIndex1 < hashRanges1.length && hashIndex2 < hashRanges2.length) {
-    const { node: subNode1, hash: hash1 } = hashRanges1[hashIndex1]
-    const { node: subNode2, hash: hash2 } = hashRanges2[hashIndex2]
+    const { node: subNode1, hash: hash1 } = hashRanges1[hashIndex1];
+    const { node: subNode2, hash: hash2 } = hashRanges2[hashIndex2];
     if (hash1 < hash2) {
-      processAllEntries(subNode1, undefined, add, remove, update)
-      hashIndex1 += 1
+      processAllEntries(subNode1, undefined, add, remove, update);
+      hashIndex1 += 1;
     } else if (hash2 < hash1) {
-      processAllEntries(undefined, subNode2, add, remove, update)
-      hashIndex2 += 1
+      processAllEntries(undefined, subNode2, add, remove, update);
+      hashIndex2 += 1;
     } else {
-      processDiffForEquivalentNodes(subNode1, subNode2, add, remove, update)
-      hashIndex1 += 1
-      hashIndex2 += 1
+      processDiffForEquivalentNodes(subNode1, subNode2, add, remove, update);
+      hashIndex1 += 1;
+      hashIndex2 += 1;
     }
   }
   while (hashIndex1 < hashRanges1.length) {
-    const { node: subNode1 } = hashRanges1[hashIndex1]
-    processAllEntries(subNode1, undefined, add, remove, update)
-    hashIndex1 += 1
+    const { node: subNode1 } = hashRanges1[hashIndex1];
+    processAllEntries(subNode1, undefined, add, remove, update);
+    hashIndex1 += 1;
   }
   while (hashIndex2 < hashRanges2.length) {
-    const { node: subNode2 } = hashRanges2[hashIndex2]
-    processAllEntries(undefined, subNode2, add, remove, update)
-    hashIndex2 += 1
+    const { node: subNode2 } = hashRanges2[hashIndex2];
+    processAllEntries(undefined, subNode2, add, remove, update);
+    hashIndex2 += 1;
   }
 }

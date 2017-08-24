@@ -2149,8 +2149,8 @@ var Map = (function (KeyedCollection$$1) {
     return {
       added: added.asImmutable(),
       removed: removed.asImmutable(),
-      updated: updated.asImmutable(),
-    }
+      updated: updated.asImmutable()
+    };
   };
 
   Map.prototype.diffFromCallbacks = function diffFromCallbacks (otherMap, ref) {
@@ -2158,7 +2158,13 @@ var Map = (function (KeyedCollection$$1) {
     var remove = ref.remove;
     var update = ref.update;
 
-    processDiffForEquivalentNodes(otherMap._root, this._root, add, remove, update);
+    processDiffForEquivalentNodes(
+      otherMap._root,
+      this._root,
+      add,
+      remove,
+      update
+    );
   };
 
   Map.prototype.__iterator = function __iterator (type, reverse) {
@@ -2385,11 +2391,13 @@ BitmapIndexedNode.prototype.getHashRanges = function getHashRanges () {
     bitmap = bitmap >>> 1;
     hash$$1++;
   }
-  return hashRanges
+  return hashRanges;
 };
 
 BitmapIndexedNode.prototype.collectAllEntries = function collectAllEntries (collectingArray) {
-  this.nodes.forEach(function (node) { return (!!node) && node.collectAllEntries(collectingArray); });
+  this.nodes.forEach(
+    function (node) { return !!node && node.collectAllEntries(collectingArray); }
+  );
   return collectingArray;
 };
 
@@ -2466,11 +2474,13 @@ HashArrayMapNode.prototype.getHashRanges = function getHashRanges () {
         var node = ref.node;
 
         return !!node;
-    })
+    });
 };
 
 HashArrayMapNode.prototype.collectAllEntries = function collectAllEntries (collectingArray) {
-  this.nodes.forEach(function (node) { return (!!node) && node.collectAllEntries(collectingArray); });
+  this.nodes.forEach(
+    function (node) { return !!node && node.collectAllEntries(collectingArray); }
+  );
   return collectingArray;
 };
 
@@ -2975,24 +2985,24 @@ var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
 var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
 function processAllEntries(node1, node2, add, remove, update) {
-  if(!node1) {
+  if (!node1) {
     node2.collectAllEntries([]).forEach(function (ref) {
       var key = ref[0];
       var value = ref[1];
 
-      add(value,key);
+      add(value, key);
     });
-    return
+    return;
   }
 
-  if(!node2) {
+  if (!node2) {
     node1.collectAllEntries([]).forEach(function (ref) {
       var key = ref[0];
       var value = ref[1];
 
-      remove(value,key);
+      remove(value, key);
     });
-    return
+    return;
   }
 
   var allEntries1 = node1.collectAllEntries([]);
@@ -3021,7 +3031,7 @@ function processAllEntries(node1, node2, add, remove, update) {
 
     var prev = keyToValue1[key];
     if (prev === undefined) {
-      add(value,key);
+      add(value, key);
     } else if (prev !== value) {
       update({ prev: prev, next: value }, key);
     }
@@ -3040,16 +3050,18 @@ function processAllEntries(node1, node2, add, remove, update) {
 function processDiffForEquivalentNodes(node1, node2, add, remove, update) {
   if (node1 === node2) {
     // The equivalent nodes in boths tries are the same node — no need to diff further
-    return
+    return;
   }
 
-  var hashRanges1 = (node1 && node1.getHashRanges) ?
-    node1.getHashRanges() : undefined;
-  var hashRanges2 = (node2 && node2.getHashRanges) ?
-    node2.getHashRanges() : undefined;
+  var hashRanges1 = node1 && node1.getHashRanges
+    ? node1.getHashRanges()
+    : undefined;
+  var hashRanges2 = node2 && node2.getHashRanges
+    ? node2.getHashRanges()
+    : undefined;
 
   if (!hashRanges1 || !hashRanges2) {
-    return processAllEntries(node1, node2, add, remove, update)
+    return processAllEntries(node1, node2, add, remove, update);
   }
 
   // Double pointer walk
@@ -4352,23 +4364,19 @@ var Set = (function (SetCollection$$1) {
 
     return {
       added: added.keySeq().toSet(),
-      removed: removed.keySeq().toSet(),
-    }
+      removed: removed.keySeq().toSet()
+    };
   };
 
   Set.prototype.diffFromCallbacks = function diffFromCallbacks (otherSet, ref) {
     var add = ref.add;
     var remove = ref.remove;
 
-    this._map.diffFromCallbacks(
-      otherSet._map, 
-      { 
-        add: function (value, key) { return add(key); },
-        remove: function (value, key) { return remove(key); },
-      }
-    );
+    this._map.diffFromCallbacks(otherSet._map, {
+      add: function (value, key) { return add(key); },
+      remove: function (value, key) { return remove(key); }
+    });
   };
-
 
   Set.prototype.__iterate = function __iterate (fn, reverse) {
     var this$1 = this;

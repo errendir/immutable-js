@@ -152,24 +152,20 @@ export class Set extends SetCollection {
   }
 
   diffFrom(otherSet) {
-    const { added, removed } = this._map.diffFrom(otherSet._map)
+    const { added, removed } = this._map.diffFrom(otherSet._map);
 
     return {
       added: added.keySeq().toSet(),
-      removed: removed.keySeq().toSet(),
-    }
+      removed: removed.keySeq().toSet()
+    };
   }
 
   diffFromCallbacks(otherSet, { add, remove }) {
-    this._map.diffFromCallbacks(
-      otherSet._map, 
-      { 
-        add: (value, key) => add(key),
-        remove: (value, key) => remove(key),
-      }
-    )
+    this._map.diffFromCallbacks(otherSet._map, {
+      add: (value, key) => add(key),
+      remove: (value, key) => remove(key)
+    });
   }
-
 
   __iterate(fn, reverse) {
     return this._map.__iterate((_, k) => fn(k, k, this), reverse);
