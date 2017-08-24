@@ -1,7 +1,5 @@
-require('node-jsx').install({harmony: true});
 var markdown = require('./markdown');
 var defs = require('./getTypeDefs');
-
 
 function genMarkdownDoc(typeDefSource) {
   return markdown(

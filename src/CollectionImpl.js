@@ -7,53 +7,108 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-import { Iterable, KeyedIterable, IndexedIterable, SetIterable,
-         isIterable, isKeyed, isIndexed, isAssociative, isOrdered,
-         IS_ITERABLE_SENTINEL, IS_KEYED_SENTINEL, IS_INDEXED_SENTINEL, IS_ORDERED_SENTINEL } from './Iterable'
+import {
+  Collection,
+  KeyedCollection,
+  IndexedCollection,
+  SetCollection
+} from './Collection';
+import {
+  isCollection,
+  isKeyed,
+  isIndexed,
+  isAssociative,
+  isOrdered,
+  IS_ITERABLE_SENTINEL,
+  IS_KEYED_SENTINEL,
+  IS_INDEXED_SENTINEL,
+  IS_ORDERED_SENTINEL
+} from './Predicates';
 
-import { is } from './is'
-import { arrCopy, NOT_SET, ensureSize, wrapIndex,
-         returnTrue, resolveBegin } from './TrieUtils'
-import { hash } from './Hash'
-import { imul, smi } from './Math'
-import { Iterator,
-         ITERATOR_SYMBOL, ITERATE_KEYS, ITERATE_VALUES, ITERATE_ENTRIES } from './Iterator'
+import { is } from './is';
+import {
+  arrCopy,
+  NOT_SET,
+  ensureSize,
+  wrapIndex,
+  returnTrue,
+  resolveBegin
+} from './TrieUtils';
+import { hash } from './Hash';
+import { imul, smi } from './Math';
+import {
+  Iterator,
+  ITERATOR_SYMBOL,
+  ITERATE_KEYS,
+  ITERATE_VALUES,
+  ITERATE_ENTRIES
+} from './Iterator';
 
-import assertNotInfinite from './utils/assertNotInfinite'
-import forceIterator from './utils/forceIterator'
-import deepEqual from './utils/deepEqual'
-import mixin from './utils/mixin'
+import assertNotInfinite from './utils/assertNotInfinite';
+import coerceKeyPath from './utils/coerceKeyPath';
+import deepEqual from './utils/deepEqual';
+import mixin from './utils/mixin';
+import quoteString from './utils/quoteString';
 
-import { Map } from './Map'
-import { OrderedMap } from './OrderedMap'
-import { List } from './List'
-import { Set } from './Set'
-import { OrderedSet } from './OrderedSet'
-import { Stack } from './Stack'
-import { Range } from './Range'
-import { KeyedSeq, IndexedSeq, SetSeq, ArraySeq } from './Seq'
-import { KeyedCollection, IndexedCollection, SetCollection } from './Collection'
-import { reify, ToKeyedSequence, ToIndexedSequence, ToSetSequence,
-          FromEntriesSequence, flipFactory, mapFactory, reverseFactory,
-          filterFactory, countByFactory, groupByFactory, sliceFactory,
-          takeWhileFactory, skipWhileFactory, concatFactory,
-          flattenFactory, flatMapFactory, interposeFactory, sortFactory,
-          maxFactory, zipWithFactory } from './Operations'
+import { Map } from './Map';
+import { OrderedMap } from './OrderedMap';
+import { List } from './List';
+import { Set } from './Set';
+import { OrderedSet } from './OrderedSet';
+import { Stack } from './Stack';
+import { Range } from './Range';
+import { KeyedSeq, IndexedSeq, SetSeq, ArraySeq } from './Seq';
+import {
+  reify,
+  ToKeyedSequence,
+  ToIndexedSequence,
+  ToSetSequence,
+  FromEntriesSequence,
+  flipFactory,
+  mapFactory,
+  reverseFactory,
+  filterFactory,
+  countByFactory,
+  groupByFactory,
+  sliceFactory,
+  takeWhileFactory,
+  skipWhileFactory,
+  concatFactory,
+  flattenFactory,
+  flatMapFactory,
+  interposeFactory,
+  sortFactory,
+  maxFactory,
+  zipWithFactory
+} from './Operations';
 
-export { Iterable, KeyedIterable, IndexedIterable, SetIterable,
-         isIterable, isKeyed, isIndexed, isAssociative, isOrdered, IS_ORDERED_SENTINEL }
+export {
+  Collection,
+  KeyedCollection,
+  IndexedCollection,
+  SetCollection,
+  CollectionPrototype,
+  IndexedCollectionPrototype
+};
 
+// Note: all of these methods are deprecated.
+Collection.isIterable = isCollection;
+Collection.isKeyed = isKeyed;
+Collection.isIndexed = isIndexed;
+Collection.isAssociative = isAssociative;
+Collection.isOrdered = isOrdered;
 
-Iterable.Iterator = Iterator;
+Collection.Iterator = Iterator;
 
-mixin(Iterable, {
-
+mixin(Collection, {
   // ### Conversion to other types
 
   toArray() {
     assertNotInfinite(this.size);
-    var array = new Array(this.size || 0);
-    this.valueSeq().__iterate((v, i) => { array[i] = v; });
+    const array = new Array(this.size || 0);
+    this.valueSeq().__iterate((v, i) => {
+      array[i] = v;
+    });
     return array;
   },
 
@@ -62,15 +117,7 @@ mixin(Iterable, {
   },
 
   toJS() {
-    return this.toSeq().map(
-      value => value && typeof value.toJS === 'function' ? value.toJS() : value
-    ).__toJS();
-  },
-
-  toJSON() {
-    return this.toSeq().map(
-      value => value && typeof value.toJSON === 'function' ? value.toJSON() : value
-    ).__toJS();
+    return this.toSeq().map(toJS).toJSON();
   },
 
   toKeyedSeq() {
@@ -84,8 +131,10 @@ mixin(Iterable, {
 
   toObject() {
     assertNotInfinite(this.size);
-    var object = {};
-    this.__iterate((v, k) => { object[k] = v; });
+    const object = {};
+    this.__iterate((v, k) => {
+      object[k] = v;
+    });
     return object;
   },
 
@@ -109,9 +158,9 @@ mixin(Iterable, {
   },
 
   toSeq() {
-    return isIndexed(this) ? this.toIndexedSeq() :
-      isKeyed(this) ? this.toKeyedSeq() :
-      this.toSetSeq();
+    return isIndexed(this)
+      ? this.toIndexedSeq()
+      : isKeyed(this) ? this.toKeyedSeq() : this.toSetSeq();
   },
 
   toStack() {
@@ -124,20 +173,22 @@ mixin(Iterable, {
     return List(isKeyed(this) ? this.valueSeq() : this);
   },
 
-
   // ### Common JavaScript methods and properties
 
   toString() {
-    return '[Iterable]';
+    return '[Collection]';
   },
 
   __toString(head, tail) {
     if (this.size === 0) {
       return head + tail;
     }
-    return head + ' ' + this.toSeq().map(this.__toStringMapper).join(', ') + ' ' + tail;
+    return head +
+      ' ' +
+      this.toSeq().map(this.__toStringMapper).join(', ') +
+      ' ' +
+      tail;
   },
-
 
   // ### ES6 Collection methods (ES6 Array and Map)
 
@@ -155,7 +206,7 @@ mixin(Iterable, {
 
   every(predicate, context) {
     assertNotInfinite(this.size);
-    var returnValue = true;
+    let returnValue = true;
     this.__iterate((v, k, c) => {
       if (!predicate.call(context, v, k, c)) {
         returnValue = false;
@@ -170,7 +221,7 @@ mixin(Iterable, {
   },
 
   find(predicate, context, notSetValue) {
-    var entry = this.findEntry(predicate, context);
+    const entry = this.findEntry(predicate, context);
     return entry ? entry[1] : notSetValue;
   },
 
@@ -182,8 +233,8 @@ mixin(Iterable, {
   join(separator) {
     assertNotInfinite(this.size);
     separator = separator !== undefined ? '' + separator : ',';
-    var joined = '';
-    var isFirst = true;
+    let joined = '';
+    let isFirst = true;
     this.__iterate(v => {
       isFirst ? (isFirst = false) : (joined += separator);
       joined += v !== null && v !== undefined ? v.toString() : '';
@@ -200,28 +251,25 @@ mixin(Iterable, {
   },
 
   reduce(reducer, initialReduction, context) {
-    assertNotInfinite(this.size);
-    var reduction;
-    var useFirst;
-    if (arguments.length < 2) {
-      useFirst = true;
-    } else {
-      reduction = initialReduction;
-    }
-    this.__iterate((v, k, c) => {
-      if (useFirst) {
-        useFirst = false;
-        reduction = v;
-      } else {
-        reduction = reducer.call(context, reduction, v, k, c);
-      }
-    });
-    return reduction;
+    return reduce(
+      this,
+      reducer,
+      initialReduction,
+      context,
+      arguments.length < 2,
+      false
+    );
   },
 
   reduceRight(reducer, initialReduction, context) {
-    var reversed = this.toKeyedSeq().reverse();
-    return reversed.reduce.apply(reversed, arguments);
+    return reduce(
+      this,
+      reducer,
+      initialReduction,
+      context,
+      arguments.length < 2,
+      true
+    );
   },
 
   reverse() {
@@ -243,7 +291,6 @@ mixin(Iterable, {
   values() {
     return this.__iterator(ITERATE_VALUES);
   },
-
 
   // ### More sequential methods
 
@@ -270,13 +317,20 @@ mixin(Iterable, {
   },
 
   entrySeq() {
-    var iterable = this;
-    if (iterable._cache) {
+    const collection = this;
+    if (collection._cache) {
       // We cache as an entries array, so we can just return the cache!
-      return new ArraySeq(iterable._cache);
+      return new ArraySeq(collection._cache);
     }
-    var entriesSequence = iterable.toSeq().map(entryMapper).toIndexedSeq();
-    entriesSequence.fromEntrySeq = () => iterable.toSeq();
+    const entriesSequence = collection.toSeq().map(entryMapper).toIndexedSeq();
+    entriesSequence.fromEntrySeq = () => collection.toSeq();
+
+    // Entries are plain Array, which do not define toJS, so it must
+    // manually converts keys and values before conversion.
+    entriesSequence.toJS = function() {
+      return this.map(entry => [toJS(entry[0]), toJS(entry[1])]).toJSON();
+    };
+
     return entriesSequence;
   },
 
@@ -285,7 +339,7 @@ mixin(Iterable, {
   },
 
   findEntry(predicate, context, notSetValue) {
-    var found = notSetValue;
+    let found = notSetValue;
     this.__iterate((v, k, c) => {
       if (predicate.call(context, v, k, c)) {
         found = [k, v];
@@ -296,7 +350,7 @@ mixin(Iterable, {
   },
 
   findKey(predicate, context) {
-    var entry = this.findEntry(predicate, context);
+    const entry = this.findEntry(predicate, context);
     return entry && entry[0];
   },
 
@@ -305,7 +359,9 @@ mixin(Iterable, {
   },
 
   findLastEntry(predicate, context, notSetValue) {
-    return this.toKeyedSeq().reverse().findEntry(predicate, context, notSetValue);
+    return this.toKeyedSeq()
+      .reverse()
+      .findEntry(predicate, context, notSetValue);
   },
 
   findLastKey(predicate, context) {
@@ -333,19 +389,33 @@ mixin(Iterable, {
   },
 
   getIn(searchKeyPath, notSetValue) {
-    var nested = this;
-    // Note: in an ES6 environment, we would prefer:
-    // for (var key of searchKeyPath) {
-    var iter = forceIterator(searchKeyPath);
-    var step;
-    while (!(step = iter.next()).done) {
-      var key = step.value;
-      nested = nested && nested.get ? nested.get(key, NOT_SET) : NOT_SET;
+    let nested = this;
+    const keyPath = coerceKeyPath(searchKeyPath);
+    let i = 0;
+    while (i !== keyPath.length) {
+      if (!nested || !nested.get) {
+        throw new TypeError(
+          'Invalid keyPath: Value at [' +
+            keyPath.slice(0, i).map(quoteString) +
+            '] does not have a .get() method: ' +
+            nested
+        );
+      }
+      nested = nested.get(keyPath[i++], NOT_SET);
       if (nested === NOT_SET) {
         return notSetValue;
       }
     }
     return nested;
+    // var step;
+    // while (!(step = iter.next()).done) {
+    //   var key = step.value;
+    //   nested = nested && nested.get ? nested.get(key, NOT_SET) : NOT_SET;
+    //   if (nested === NOT_SET) {
+    //     return notSetValue;
+    //   }
+    // }
+    // return nested;
   },
 
   groupBy(grouper, context) {
@@ -361,12 +431,12 @@ mixin(Iterable, {
   },
 
   isSubset(iter) {
-    iter = typeof iter.includes === 'function' ? iter : Iterable(iter);
+    iter = typeof iter.includes === 'function' ? iter : Collection(iter);
     return this.every(value => iter.includes(value));
   },
 
   isSuperset(iter) {
-    iter = typeof iter.isSubset === 'function' ? iter : Iterable(iter);
+    iter = typeof iter.isSubset === 'function' ? iter : Collection(iter);
     return iter.isSubset(this);
   },
 
@@ -395,11 +465,18 @@ mixin(Iterable, {
   },
 
   min(comparator) {
-    return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator);
+    return maxFactory(
+      this,
+      comparator ? neg(comparator) : defaultNegComparator
+    );
   },
 
   minBy(mapper, comparator) {
-    return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator, mapper);
+    return maxFactory(
+      this,
+      comparator ? neg(comparator) : defaultNegComparator,
+      mapper
+    );
   },
 
   rest() {
@@ -407,11 +484,11 @@ mixin(Iterable, {
   },
 
   skip(amount) {
-    return this.slice(Math.max(0, amount));
+    return amount === 0 ? this : this.slice(Math.max(0, amount));
   },
 
   skipLast(amount) {
-    return reify(this, this.toSeq().reverse().skip(amount).reverse());
+    return amount === 0 ? this : this.slice(0, -Math.max(0, amount));
   },
 
   skipWhile(predicate, context) {
@@ -431,7 +508,7 @@ mixin(Iterable, {
   },
 
   takeLast(amount) {
-    return reify(this, this.toSeq().reverse().take(amount).reverse());
+    return this.slice(-Math.max(0, amount));
   },
 
   takeWhile(predicate, context) {
@@ -442,17 +519,19 @@ mixin(Iterable, {
     return this.takeWhile(not(predicate), context);
   },
 
+  update(fn) {
+    return fn(this);
+  },
+
   valueSeq() {
     return this.toIndexedSeq();
   },
 
-
   // ### Hashable Object
 
   hashCode() {
-    return this.__hash || (this.__hash = hashIterable(this));
+    return this.__hash || (this.__hash = hashCollection(this));
   }
-
 
   // ### Internal
 
@@ -461,23 +540,18 @@ mixin(Iterable, {
   // abstract __iterator(type, reverse)
 });
 
-// var IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
-// var IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
-// var IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
-// var IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
+const CollectionPrototype = Collection.prototype;
+CollectionPrototype[IS_ITERABLE_SENTINEL] = true;
+CollectionPrototype[ITERATOR_SYMBOL] = CollectionPrototype.values;
+CollectionPrototype.toJSON = CollectionPrototype.toArray;
+CollectionPrototype.__toStringMapper = quoteString;
+CollectionPrototype.inspect = (CollectionPrototype.toSource = function() {
+  return this.toString();
+});
+CollectionPrototype.chain = CollectionPrototype.flatMap;
+CollectionPrototype.contains = CollectionPrototype.includes;
 
-var IterablePrototype = Iterable.prototype;
-IterablePrototype[IS_ITERABLE_SENTINEL] = true;
-IterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.values;
-IterablePrototype.__toJS = IterablePrototype.toArray;
-IterablePrototype.__toStringMapper = quoteString;
-IterablePrototype.inspect =
-IterablePrototype.toSource = function() { return this.toString(); };
-IterablePrototype.chain = IterablePrototype.flatMap;
-IterablePrototype.contains = IterablePrototype.includes;
-
-mixin(KeyedIterable, {
-
+mixin(KeyedCollection, {
   // ### More sequential methods
 
   flip() {
@@ -485,40 +559,36 @@ mixin(KeyedIterable, {
   },
 
   mapEntries(mapper, context) {
-    var iterations = 0;
-    return reify(this,
-      this.toSeq().map(
-        (v, k) => mapper.call(context, [k, v], iterations++, this)
-      ).fromEntrySeq()
+    let iterations = 0;
+    return reify(
+      this,
+      this.toSeq()
+        .map((v, k) => mapper.call(context, [k, v], iterations++, this))
+        .fromEntrySeq()
     );
   },
 
   mapKeys(mapper, context) {
-    return reify(this,
-      this.toSeq().flip().map(
-        (k, v) => mapper.call(context, k, v, this)
-      ).flip()
+    return reify(
+      this,
+      this.toSeq().flip().map((k, v) => mapper.call(context, k, v, this)).flip()
     );
   }
-
 });
 
-var KeyedIterablePrototype = KeyedIterable.prototype;
-KeyedIterablePrototype[IS_KEYED_SENTINEL] = true;
-KeyedIterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.entries;
-KeyedIterablePrototype.__toJS = IterablePrototype.toObject;
-KeyedIterablePrototype.__toStringMapper = (v, k) => JSON.stringify(k) + ': ' + quoteString(v);
+const KeyedCollectionPrototype = KeyedCollection.prototype;
+KeyedCollectionPrototype[IS_KEYED_SENTINEL] = true;
+KeyedCollectionPrototype[ITERATOR_SYMBOL] = CollectionPrototype.entries;
+KeyedCollectionPrototype.toJSON = CollectionPrototype.toObject;
+KeyedCollectionPrototype.__toStringMapper = (v, k) =>
+  quoteString(k) + ': ' + quoteString(v);
 
-
-
-mixin(IndexedIterable, {
-
+mixin(IndexedCollection, {
   // ### Conversion to other types
 
   toKeyedSeq() {
     return new ToKeyedSequence(this, false);
   },
-
 
   // ### ES6 Collection methods (ES6 Array and Map)
 
@@ -527,17 +597,17 @@ mixin(IndexedIterable, {
   },
 
   findIndex(predicate, context) {
-    var entry = this.findEntry(predicate, context);
+    const entry = this.findEntry(predicate, context);
     return entry ? entry[0] : -1;
   },
 
   indexOf(searchValue) {
-    var key = this.keyOf(searchValue);
+    const key = this.keyOf(searchValue);
     return key === undefined ? -1 : key;
   },
 
   lastIndexOf(searchValue) {
-    var key = this.lastKeyOf(searchValue);
+    const key = this.lastKeyOf(searchValue);
     return key === undefined ? -1 : key;
   },
 
@@ -550,8 +620,8 @@ mixin(IndexedIterable, {
   },
 
   splice(index, removeNum /*, ...values*/) {
-    var numArgs = arguments.length;
-    removeNum = Math.max(removeNum | 0, 0);
+    const numArgs = arguments.length;
+    removeNum = Math.max(removeNum || 0, 0);
     if (numArgs === 0 || (numArgs === 2 && !removeNum)) {
       return this;
     }
@@ -559,20 +629,19 @@ mixin(IndexedIterable, {
     // collection. However size may be expensive to compute if not cached, so
     // only call count() if the number is in fact negative.
     index = resolveBegin(index, index < 0 ? this.count() : this.size);
-    var spliced = this.slice(0, index);
+    const spliced = this.slice(0, index);
     return reify(
       this,
-      numArgs === 1 ?
-        spliced :
-        spliced.concat(arrCopy(arguments, 2), this.slice(index + removeNum))
+      numArgs === 1
+        ? spliced
+        : spliced.concat(arrCopy(arguments, 2), this.slice(index + removeNum))
     );
   },
-
 
   // ### More collection methods
 
   findLastIndex(predicate, context) {
-    var entry = this.findLastEntry(predicate, context);
+    const entry = this.findLastEntry(predicate, context);
     return entry ? entry[0] : -1;
   },
 
@@ -586,30 +655,30 @@ mixin(IndexedIterable, {
 
   get(index, notSetValue) {
     index = wrapIndex(this, index);
-    return (index < 0 || (this.size === Infinity ||
-        (this.size !== undefined && index > this.size))) ?
-      notSetValue :
-      this.find((_, key) => key === index, undefined, notSetValue);
+    return index < 0 ||
+      (this.size === Infinity || (this.size !== undefined && index > this.size))
+      ? notSetValue
+      : this.find((_, key) => key === index, undefined, notSetValue);
   },
 
   has(index) {
     index = wrapIndex(this, index);
-    return index >= 0 && (this.size !== undefined ?
-      this.size === Infinity || index < this.size :
-      this.indexOf(index) !== -1
-    );
+    return index >= 0 &&
+      (this.size !== undefined
+        ? this.size === Infinity || index < this.size
+        : this.indexOf(index) !== -1);
   },
 
   interpose(separator) {
     return reify(this, interposeFactory(this, separator));
   },
 
-  interleave(/*...iterables*/) {
-    var iterables = [this].concat(arrCopy(arguments));
-    var zipped = zipWithFactory(this.toSeq(), IndexedSeq.of, iterables);
-    var interleaved = zipped.flatten(true);
+  interleave(/*...collections*/) {
+    const collections = [this].concat(arrCopy(arguments));
+    const zipped = zipWithFactory(this.toSeq(), IndexedSeq.of, collections);
+    const interleaved = zipped.flatten(true);
     if (zipped.size) {
-      interleaved.size = zipped.size * iterables.length;
+      interleaved.size = zipped.size * collections.length;
     }
     return reify(this, interleaved);
   },
@@ -626,26 +695,23 @@ mixin(IndexedIterable, {
     return reify(this, skipWhileFactory(this, predicate, context, false));
   },
 
-  zip(/*, ...iterables */) {
-    var iterables = [this].concat(arrCopy(arguments));
-    return reify(this, zipWithFactory(this, defaultZipper, iterables));
+  zip(/*, ...collections */) {
+    const collections = [this].concat(arrCopy(arguments));
+    return reify(this, zipWithFactory(this, defaultZipper, collections));
   },
 
-  zipWith(zipper/*, ...iterables */) {
-    var iterables = arrCopy(arguments);
-    iterables[0] = this;
-    return reify(this, zipWithFactory(this, zipper, iterables));
+  zipWith(zipper /*, ...collections */) {
+    const collections = arrCopy(arguments);
+    collections[0] = this;
+    return reify(this, zipWithFactory(this, zipper, collections));
   }
-
 });
 
-IndexedIterable.prototype[IS_INDEXED_SENTINEL] = true;
-IndexedIterable.prototype[IS_ORDERED_SENTINEL] = true;
+const IndexedCollectionPrototype = IndexedCollection.prototype;
+IndexedCollectionPrototype[IS_INDEXED_SENTINEL] = true;
+IndexedCollectionPrototype[IS_ORDERED_SENTINEL] = true;
 
-
-
-mixin(SetIterable, {
-
+mixin(SetCollection, {
   // ### ES6 Collection methods (ES6 Array and Map)
 
   get(value, notSetValue) {
@@ -656,31 +722,39 @@ mixin(SetIterable, {
     return this.has(value);
   },
 
-
   // ### More sequential methods
 
   keySeq() {
     return this.valueSeq();
   }
-
 });
 
-SetIterable.prototype.has = IterablePrototype.includes;
-SetIterable.prototype.contains = SetIterable.prototype.includes;
-
+SetCollection.prototype.has = CollectionPrototype.includes;
+SetCollection.prototype.contains = SetCollection.prototype.includes;
 
 // Mixin subclasses
 
-mixin(KeyedSeq, KeyedIterable.prototype);
-mixin(IndexedSeq, IndexedIterable.prototype);
-mixin(SetSeq, SetIterable.prototype);
-
-mixin(KeyedCollection, KeyedIterable.prototype);
-mixin(IndexedCollection, IndexedIterable.prototype);
-mixin(SetCollection, SetIterable.prototype);
-
+mixin(KeyedSeq, KeyedCollection.prototype);
+mixin(IndexedSeq, IndexedCollection.prototype);
+mixin(SetSeq, SetCollection.prototype);
 
 // #pragma Helper functions
+
+function reduce(collection, reducer, reduction, context, useFirst, reverse) {
+  assertNotInfinite(collection.size);
+  collection.__iterate(
+    (v, k, c) => {
+      if (useFirst) {
+        useFirst = false;
+        reduction = v;
+      } else {
+        reduction = reducer.call(context, reduction, v, k, c);
+      }
+    },
+    reverse
+  );
+  return reduction;
+}
 
 function keyMapper(v, k) {
   return k;
@@ -690,20 +764,20 @@ function entryMapper(v, k) {
   return [k, v];
 }
 
+function toJS(value) {
+  return value && typeof value.toJS === 'function' ? value.toJS() : value;
+}
+
 function not(predicate) {
   return function() {
     return !predicate.apply(this, arguments);
-  }
+  };
 }
 
 function neg(predicate) {
   return function() {
     return -predicate.apply(this, arguments);
-  }
-}
-
-function quoteString(value) {
-  return typeof value === 'string' ? JSON.stringify(value) : String(value);
+  };
 }
 
 function defaultZipper() {
@@ -714,36 +788,44 @@ function defaultNegComparator(a, b) {
   return a < b ? 1 : a > b ? -1 : 0;
 }
 
-function hashIterable(iterable) {
-  if (iterable.size === Infinity) {
+function hashCollection(collection) {
+  if (collection.size === Infinity) {
     return 0;
   }
-  var ordered = isOrdered(iterable);
-  var keyed = isKeyed(iterable);
-  var h = ordered ? 1 : 0;
-  var size = iterable.__iterate(
-    keyed ?
-      ordered ?
-        (v, k) => { h = 31 * h + hashMerge(hash(v), hash(k)) | 0; } :
-        (v, k) => { h = h + hashMerge(hash(v), hash(k)) | 0; } :
-      ordered ?
-        v => { h = 31 * h + hash(v) | 0; } :
-        v => { h = h + hash(v) | 0; }
+  const ordered = isOrdered(collection);
+  const keyed = isKeyed(collection);
+  let h = ordered ? 1 : 0;
+  const size = collection.__iterate(
+    keyed
+      ? ordered
+          ? (v, k) => {
+              h = 31 * h + hashMerge(hash(v), hash(k)) | 0;
+            }
+          : (v, k) => {
+              h = h + hashMerge(hash(v), hash(k)) | 0;
+            }
+      : ordered
+          ? v => {
+              h = 31 * h + hash(v) | 0;
+            }
+          : v => {
+              h = h + hash(v) | 0;
+            }
   );
   return murmurHashOfSize(size, h);
 }
 
 function murmurHashOfSize(size, h) {
-  h = imul(h, 0xCC9E2D51);
-  h = imul(h << 15 | h >>> -15, 0x1B873593);
+  h = imul(h, 0xcc9e2d51);
+  h = imul(h << 15 | h >>> -15, 0x1b873593);
   h = imul(h << 13 | h >>> -13, 5);
-  h = (h + 0xE6546B64 | 0) ^ size;
-  h = imul(h ^ h >>> 16, 0x85EBCA6B);
-  h = imul(h ^ h >>> 13, 0xC2B2AE35);
+  h = (h + 0xe6546b64 | 0) ^ size;
+  h = imul(h ^ h >>> 16, 0x85ebca6b);
+  h = imul(h ^ h >>> 13, 0xc2b2ae35);
   h = smi(h ^ h >>> 16);
   return h;
 }
 
 function hashMerge(a, b) {
-  return a ^ b + 0x9E3779B9 + (a << 6) + (a >> 2) | 0; // int
+  return a ^ b + 0x9e3779b9 + (a << 6) + (a >> 2) | 0; // int
 }

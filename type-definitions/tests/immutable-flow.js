@@ -10,14 +10,22 @@ import Immutable, {
   Map,
   Stack,
   Set,
-  KeyedIterable,
+  Seq,
   Range,
   Repeat,
-  IndexedSeq,
   OrderedMap,
-  OrderedSet
-} from 'immutable'
-import * as Immutable2 from 'immutable'
+  OrderedSet,
+} from '../../'
+import * as Immutable2 from '../../'
+
+import type {
+  KeyedCollection,
+  IndexedCollection,
+  SetCollection,
+  KeyedSeq,
+  IndexedSeq,
+  SetSeq,
+} from '../../'
 
 /**
  * Although this looks like dead code, importing `Immutable` and
@@ -31,19 +39,22 @@ const ImmutableList = Immutable.List
 const ImmutableMap = Immutable.Map
 const ImmutableStack = Immutable.Stack
 const ImmutableSet = Immutable.Set
-const ImmutableKeyedIterable = Immutable.KeyedIterable
+const ImmutableKeyedCollection: KeyedCollection<*, *> = Immutable.Collection.Keyed()
 const ImmutableRange = Immutable.Range
 const ImmutableRepeat = Immutable.Repeat
-const ImmutableIndexedSeq = Immutable.IndexedSeq
+const ImmutableIndexedSeq: IndexedSeq<*> = Immutable.Seq.Indexed()
 
 const Immutable2List = Immutable2.List
 const Immutable2Map = Immutable2.Map
 const Immutable2Stack = Immutable2.Stack
 const Immutable2Set = Immutable2.Set
-const Immutable2KeyedIterable = Immutable2.KeyedIterable
+const Immutable2KeyedCollection: Immutable2.KeyedCollection<*, *> = Immutable2.Collection.Keyed()
 const Immutable2Range = Immutable2.Range
 const Immutable2Repeat = Immutable2.Repeat
-const Immutable2IndexedSeq = Immutable2.IndexedSeq
+const Immutable2IndexedSeq: Immutable2.IndexedSeq<*> = Immutable2.Seq.Indexed()
+
+var defaultExport: List<*> = Immutable.List();
+var moduleExport: List<*> = Immutable2.List();
 
 var numberList: List<number> = List()
 var numberOrStringList: List<string | number> = List()
@@ -67,10 +78,11 @@ var stringSet: Set<string> = Set()
 var numberStack: Stack<number> = Stack()
 var numberOrStringStack: Stack<string | number> = Stack()
 var number: number = 0
-var stringToNumberIterable: KeyedIterable<string, number> = stringToNumber
-var numberToStringIterable: KeyedIterable<number, string> = numberToString
+var stringToNumberCollection: KeyedCollection<string, number> = stringToNumber
+var numberToStringCollection: KeyedCollection<number, string> = numberToString
 
 numberList = List([1, 2])
+var numberListSize: number = numberList.size;
 numberOrStringList = List(['a', 1])
 // $ExpectError
 numberList = List(['a', 'b'])
@@ -84,6 +96,12 @@ numberList = List().set(0, 0)
 numberOrStringList = List.of(0).set(1, 'a')
 // $ExpectError
 numberList = List().set(0, 'a')
+
+numberList = List.of(1, 2, 3)
+// $ExpectError
+var item: number = numberList.get(4)
+var nullableItem: ?number = numberList.get(4)
+var itemOrDefault: number = numberList.get(4, 10)
 
 numberList = List().insert(0, 0)
 numberOrStringList = List.of(0).insert(1, 'a')
@@ -156,6 +174,14 @@ numberList = List.of(1).setIn([], 0)
 numberList = List.of(1).deleteIn([], 0)
 numberList = List.of(1).removeIn([], 0)
 
+numberList = List([1]).updateIn([0], val => val + 1)
+// $ExpectError - 'a' in an invalid argument
+numberList = List([1]).updateIn([0], 'a')
+
+numberList = List([1]).updateIn([0], 0, val => val + 1)
+// $ExpectError - 'a' is an invalid argument
+numberList = List([1]).updateIn([0], 0, 'a')
+
 numberList = List.of(1).mergeIn([], [])
 numberList = List.of(1).mergeDeepIn([], [])
 
@@ -177,6 +203,7 @@ numberList = List.of(1).flatten()
 /* Map */
 
 stringToNumber = Map()
+let stringToNumberSize: number = stringToNumber.size
 stringToNumberOrString = Map()
 numberToString = Map()
 
@@ -198,6 +225,19 @@ stringToNumber = Map().set(1, '')
 
 stringToNumber = Map({'a': 0}).delete('a')
 stringToNumber = Map({'a': 0}).remove('a')
+// $ExpectError
+stringToNumber = Map({'a': 0}).delete(1)
+// $ExpectError
+stringToNumber = Map({'a': 0}).remove(1)
+
+stringToNumber = Map({'a': 0}).deleteAll(['a'])
+stringToNumber = Map({'a': 0}).removeAll(['a'])
+// $ExpectError
+stringToNumber = Map({'a': 0}).deleteAll(1)
+// $ExpectError
+stringToNumber = Map({'a': 0}).deleteAll([1])
+// $ExpectError
+stringToNumber = Map({'a': 0}).removeAll([1])
 
 stringToNumber = Map({'a': 0}).clear()
 
@@ -490,9 +530,7 @@ numberSet = Set([1]).merge(Set(['a']))
 
 numberSet = Set([1]).intersect(Set([1]))
 numberSet = Set([1]).intersect([1])
-// $ExpectError
 numberSet = Set([1]).intersect(Set(['a']))
-// $ExpectError
 numberSet = Set([1]).intersect(['a'])
 
 numberSet = Set([1]).subtract(Set([1]))
@@ -652,6 +690,7 @@ orderedStringSet = OrderedSet.of('a', 'b').flatten('a')
 /* Stack */
 
 numberStack = Stack([1, 2])
+let numberStackSize: number = numberStack.size;
 numberOrStringStack = Stack(['a', 1])
 // $ExpectError
 numberStack = Stack(['a', 'b'])
@@ -728,5 +767,9 @@ numberStack = Stack(['a']).flatten()
 // $ExpectError
 { const stringSequence: IndexedSeq<string> = Range(0, 0, 0) }
 
-/* Record */
-// TODO
+/* Seq */
+
+let numberSeq = Seq([ 1, 2, 3 ])
+// $ExpectError
+let numberSeqSize: number = numberSeq.size
+let maybeNumberSeqSize: ?number = numberSeq.size

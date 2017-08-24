@@ -6,9 +6,11 @@ function loadJSON(url, then) {
     var json;
     try {
       json = JSON.parse(event.target.responseText);
-    } catch (e) {}
+    } catch (e) {
+      // ignore error
+    }
     then(json);
-  }
-  oReq.open("get", url, true);
+  };
+  oReq.open('get', url, true);
   oReq.send();
 }

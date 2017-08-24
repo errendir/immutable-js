@@ -7,28 +7,36 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-import { Seq } from './Seq'
-import { Collection } from './Collection'
-import { OrderedMap } from './OrderedMap'
-import { List } from './List'
-import { Map } from './Map'
-import { Stack } from './Stack'
-import { OrderedSet } from './OrderedSet'
-import { Set } from './Set'
-import { Record } from './Record'
-import { Range } from './Range'
-import { Repeat } from './Repeat'
-import { is } from './is'
-import { fromJS } from './fromJS'
-import { Iterable } from './IterableImpl'
-
+import { Seq } from './Seq';
+import { OrderedMap } from './OrderedMap';
+import { List } from './List';
+import { Map } from './Map';
+import { Stack } from './Stack';
+import { OrderedSet } from './OrderedSet';
+import { Set } from './Set';
+import { Record } from './Record';
+import { Range } from './Range';
+import { Repeat } from './Repeat';
+import { is } from './is';
+import { fromJS } from './fromJS';
+import {
+  isImmutable,
+  isCollection,
+  isKeyed,
+  isIndexed,
+  isAssociative,
+  isOrdered,
+  isValueObject
+} from './Predicates';
+import { Collection } from './CollectionImpl';
+import { hash } from './Hash';
 
 export default {
-
-  Iterable: Iterable,
+  Collection: Collection,
+  // Note: Iterable is deprecated
+  Iterable: Collection,
 
   Seq: Seq,
-  Collection: Collection,
   Map: Map,
   OrderedMap: OrderedMap,
   List: List,
@@ -41,26 +49,42 @@ export default {
   Repeat: Repeat,
 
   is: is,
-  fromJS: fromJS
+  fromJS: fromJS,
+  hash: hash,
 
+  isImmutable: isImmutable,
+  isCollection: isCollection,
+  isKeyed: isKeyed,
+  isIndexed: isIndexed,
+  isAssociative: isAssociative,
+  isOrdered: isOrdered,
+  isValueObject: isValueObject
 };
 
+// Note: Iterable is deprecated
+const Iterable = Collection;
+
 export {
-	Iterable,
-
-	Seq,
-	Collection,
-	Map,
-	OrderedMap,
-	List,
-	Stack,
-	Set,
-	OrderedSet,
-
-	Record,
-	Range,
-	Repeat,
-
-	is,
-	fromJS
-}
+  Collection,
+  Iterable,
+  Seq,
+  Map,
+  OrderedMap,
+  List,
+  Stack,
+  Set,
+  OrderedSet,
+  Record,
+  Range,
+  Repeat,
+  is,
+  fromJS,
+  hash,
+  isImmutable,
+  isCollection,
+  isKeyed,
+  isIndexed,
+  isAssociative,
+  isOrdered,
+  isValueObject
+};

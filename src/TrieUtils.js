@@ -7,22 +7,21 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-
 // Used for setting prototype methods that IE8 chokes on.
-export var DELETE = 'delete';
+export const DELETE = 'delete';
 
 // Constants describing the size of trie nodes.
-export var SHIFT = 5; // Resulted in best performance after ______?
-export var SIZE = 1 << SHIFT;
-export var MASK = SIZE - 1;
+export const SHIFT = 5; // Resulted in best performance after ______?
+export const SIZE = 1 << SHIFT;
+export const MASK = SIZE - 1;
 
 // A consistent shared value representing "not set" which equals nothing other
 // than itself, and nothing that could be provided externally.
-export var NOT_SET = {};
+export const NOT_SET = {};
 
 // Boolean references, Rough equivalent of `bool &`.
-export var CHANGE_LENGTH = { value: false };
-export var DID_ALTER = { value: false };
+export const CHANGE_LENGTH = { value: false };
+export const DID_ALTER = { value: false };
 
 export function MakeRef(ref) {
   ref.value = false;
@@ -41,9 +40,9 @@ export function OwnerID() {}
 // http://jsperf.com/copy-array-inline
 export function arrCopy(arr, offset) {
   offset = offset || 0;
-  var len = Math.max(0, arr.length - offset);
-  var newArr = new Array(len);
-  for (var ii = 0; ii < len; ii++) {
+  const len = Math.max(0, arr.length - offset);
+  const newArr = new Array(len);
+  for (let ii = 0; ii < len; ii++) {
     newArr[ii] = arr[ii + offset];
   }
   return newArr;
@@ -65,7 +64,7 @@ export function wrapIndex(iter, index) {
   //
   // http://www.ecma-international.org/ecma-262/6.0/#sec-array-exotic-objects
   if (typeof index !== 'number') {
-    var uint32Index = index >>> 0; // N >>> 0 is shorthand for ToUint32
+    const uint32Index = index >>> 0; // N >>> 0 is shorthand for ToUint32
     if ('' + uint32Index !== index || uint32Index === 4294967295) {
       return NaN;
     }
@@ -92,11 +91,13 @@ export function resolveEnd(end, size) {
 }
 
 function resolveIndex(index, size, defaultIndex) {
-  return index === undefined ?
-    defaultIndex :
-    index < 0 ?
-      Math.max(0, size + index) :
-      size === undefined ?
-        index :
-        Math.min(size, index);
+  // Sanitize indices using this shorthand for ToInt32(argument)
+  // http://www.ecma-international.org/ecma-262/6.0/#sec-toint32
+  return index === undefined
+    ? defaultIndex
+    : index < 0
+        ? size === Infinity ? size : Math.max(0, size + index) | 0
+        : size === undefined || size === index
+            ? index
+            : Math.min(size, index) | 0;
 }

@@ -1,6 +1,6 @@
 # Have a question?
 
-Please ask questions on [Stack Overflow](http://stackoverflow.com/questions/tagged/immutable.js) instead of opening a Github Issue. There are more people on Stack Overflow who
+Please ask questions on [Stack Overflow](https://stackoverflow.com/questions/tagged/immutable.js) instead of opening a Github Issue. There are more people on Stack Overflow who
 can answer questions, and good answers can be searchable and canonical.
 
 # Issues
@@ -31,6 +31,12 @@ your [pull requests](https://help.github.com/articles/creating-a-pull-request).
  5. Build generated JS, run tests and ensure your code passes lint. (`npm run build && npm run test`)
  6. Be sure to commit the generated JS in `/dist`.
  7. If you haven't already, complete the Contributor License Agreement ("CLA").
+
+## Documentation
+
+Documentation for Immutable.js (hosted at http://facebook.github.io/immutable-js)
+is developed in `pages/`. Run `npm start` to get a local copy in your browser
+while making edits.
 
 ## Contributor License Agreement ("CLA")
 

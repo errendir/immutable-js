@@ -7,28 +7,28 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-import { SetIterable, KeyedIterable, isOrdered } from './Iterable'
-import { SetCollection } from './Collection'
-import { emptyMap, MapPrototype } from './Map'
-import { DELETE } from './TrieUtils'
-import { sortFactory } from './Operations'
-import assertNotInfinite from './utils/assertNotInfinite'
+import { Collection, SetCollection, KeyedCollection } from './Collection';
+import { isOrdered } from './Predicates';
+import { emptyMap, MapPrototype } from './Map';
+import { DELETE } from './TrieUtils';
+import { sortFactory } from './Operations';
+import assertNotInfinite from './utils/assertNotInfinite';
 
-import { OrderedSet } from './OrderedSet'
-
+import { OrderedSet } from './OrderedSet';
 
 export class Set extends SetCollection {
-
   // @pragma Construction
 
   constructor(value) {
-    return value === null || value === undefined ? emptySet() :
-      isSet(value) && !isOrdered(value) ? value :
-      emptySet().withMutations(set => {
-        var iter = SetIterable(value);
-        assertNotInfinite(iter.size);
-        iter.forEach(v => set.add(v));
-      });
+    return value === null || value === undefined
+      ? emptySet()
+      : isSet(value) && !isOrdered(value)
+          ? value
+          : emptySet().withMutations(set => {
+              const iter = SetCollection(value);
+              assertNotInfinite(iter.size);
+              iter.forEach(v => set.add(v));
+            });
   }
 
   static of(/*...values*/) {
@@ -36,7 +36,21 @@ export class Set extends SetCollection {
   }
 
   static fromKeys(value) {
-    return this(KeyedIterable(value).keySeq());
+    return this(KeyedCollection(value).keySeq());
+  }
+
+  static intersect(sets) {
+    sets = Collection(sets).toArray();
+    return sets.length
+      ? SetPrototype.intersect.apply(Set(sets.pop()), sets)
+      : emptySet();
+  }
+
+  static union(sets) {
+    sets = Collection(sets).toArray();
+    return sets.length
+      ? SetPrototype.union.apply(Set(sets.pop()), sets)
+      : emptySet();
   }
 
   toString() {
@@ -74,8 +88,8 @@ export class Set extends SetCollection {
       return this.constructor(iters[0]);
     }
     return this.withMutations(set => {
-      for (var ii = 0; ii < iters.length; ii++) {
-        SetIterable(iters[ii]).forEach(value => set.add(value));
+      for (let ii = 0; ii < iters.length; ii++) {
+        SetCollection(iters[ii]).forEach(value => set.add(value));
       }
     });
   }
@@ -84,13 +98,16 @@ export class Set extends SetCollection {
     if (iters.length === 0) {
       return this;
     }
-    iters = iters.map(iter => SetIterable(iter));
-    var originalSet = this;
+    iters = iters.map(iter => SetCollection(iter));
+    const toRemove = [];
+    this.forEach(value => {
+      if (!iters.every(iter => iter.includes(value))) {
+        toRemove.push(value);
+      }
+    });
     return this.withMutations(set => {
-      originalSet.forEach(value => {
-        if (!iters.every(iter => iter.includes(value))) {
-          set.remove(value);
-        }
+      toRemove.forEach(value => {
+        set.remove(value);
       });
     });
   }
@@ -99,13 +116,15 @@ export class Set extends SetCollection {
     if (iters.length === 0) {
       return this;
     }
-    iters = iters.map(iter => SetIterable(iter));
-    var originalSet = this;
+    const toRemove = [];
+    this.forEach(value => {
+      if (iters.some(iter => iter.includes(value))) {
+        toRemove.push(value);
+      }
+    });
     return this.withMutations(set => {
-      originalSet.forEach(value => {
-        if (iters.some(iter => iter.includes(value))) {
-          set.remove(value);
-        }
+      toRemove.forEach(value => {
+        set.remove(value);
       });
     });
   }
@@ -164,8 +183,11 @@ export class Set extends SetCollection {
     if (ownerID === this.__ownerID) {
       return this;
     }
-    var newMap = this._map.__ensureOwner(ownerID);
+    const newMap = this._map.__ensureOwner(ownerID);
     if (!ownerID) {
+      if (this.size === 0) {
+        return emptySet();
+      }
       this.__ownerID = ownerID;
       this._map = newMap;
       return this;
@@ -180,9 +202,9 @@ export function isSet(maybeSet) {
 
 Set.isSet = isSet;
 
-var IS_SET_SENTINEL = '@@__IMMUTABLE_SET__@@';
+const IS_SET_SENTINEL = '@@__IMMUTABLE_SET__@@';
 
-var SetPrototype = Set.prototype;
+const SetPrototype = Set.prototype;
 SetPrototype[IS_SET_SENTINEL] = true;
 SetPrototype[DELETE] = SetPrototype.remove;
 SetPrototype.mergeDeep = SetPrototype.merge;
@@ -200,20 +222,20 @@ function updateSet(set, newMap) {
     set._map = newMap;
     return set;
   }
-  return newMap === set._map ? set :
-    newMap.size === 0 ? set.__empty() :
-    set.__make(newMap);
+  return newMap === set._map
+    ? set
+    : newMap.size === 0 ? set.__empty() : set.__make(newMap);
 }
 
 function makeSet(map, ownerID) {
-  var set = Object.create(SetPrototype);
+  const set = Object.create(SetPrototype);
   set.size = map ? map.size : 0;
   set._map = map;
   set.__ownerID = ownerID;
   return set;
 }
 
-var EMPTY_SET;
+let EMPTY_SET;
 function emptySet() {
   return EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
 }

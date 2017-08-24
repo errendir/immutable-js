@@ -7,20 +7,23 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-import { KeyedIterable } from './Iterable'
-import { KeyedCollection } from './Collection'
-import { Map, MapPrototype, emptyMap } from './Map'
-import { DELETE } from './TrieUtils'
+import { KeyedCollection } from './Collection';
+import { keyedSeqFromValue } from './Seq';
+import { MapPrototype } from './Map';
+import { List } from './List';
+import { ITERATOR_SYMBOL } from './Iterator';
+import { isRecord, IS_RECORD_SENTINEL } from './Predicates';
+import { CollectionPrototype } from './CollectionImpl';
+import { DELETE } from './TrieUtils';
 
-import invariant from './utils/invariant'
+import invariant from './utils/invariant';
+import quoteString from './utils/quoteString';
 
-
-export class Record extends KeyedCollection {
-
+export class Record {
   constructor(defaultValues, name) {
-    var hasInitialized;
+    let hasInitialized;
 
-    var RecordType = function Record(values) {
+    const RecordType = function Record(values) {
       if (values instanceof RecordType) {
         return values;
       }
@@ -29,109 +32,149 @@ export class Record extends KeyedCollection {
       }
       if (!hasInitialized) {
         hasInitialized = true;
-        var keys = Object.keys(defaultValues);
-        setProps(RecordTypePrototype, keys);
-        RecordTypePrototype.size = keys.length;
+        const keys = Object.keys(defaultValues);
+        const indices = (RecordTypePrototype._indices = {});
         RecordTypePrototype._name = name;
         RecordTypePrototype._keys = keys;
         RecordTypePrototype._defaultValues = defaultValues;
+        for (let i = 0; i < keys.length; i++) {
+          const propName = keys[i];
+          indices[propName] = i;
+          if (RecordTypePrototype[propName]) {
+            /* eslint-disable no-console */
+            typeof console === 'object' &&
+              console.warn &&
+              console.warn(
+                'Cannot define ' +
+                  recordName(this) +
+                  ' with property "' +
+                  propName +
+                  '" since that property name is part of the Record API.'
+              );
+            /* eslint-enable no-console */
+          } else {
+            setProp(RecordTypePrototype, propName);
+          }
+        }
       }
-      this._map = Map(values);
+      this.__ownerID = undefined;
+      this._values = List().withMutations(l => {
+        l.setSize(this._keys.length);
+        KeyedCollection(values).forEach((v, k) => {
+          l.set(this._indices[k], v === this._defaultValues[k] ? undefined : v);
+        });
+      });
     };
 
-    var RecordTypePrototype = RecordType.prototype = Object.create(RecordPrototype);
+    const RecordTypePrototype = (RecordType.prototype = Object.create(
+      RecordPrototype
+    ));
     RecordTypePrototype.constructor = RecordType;
 
     return RecordType;
   }
 
   toString() {
-    return this.__toString(recordName(this) + ' {', '}');
+    let str = recordName(this) + ' { ';
+    const keys = this._keys;
+    let k;
+    for (let i = 0, l = keys.length; i !== l; i++) {
+      k = keys[i];
+      str += (i ? ', ' : '') + k + ': ' + quoteString(this.get(k));
+    }
+    return str + ' }';
+  }
+
+  equals(other) {
+    return this === other ||
+      (this._keys === other._keys && recordSeq(this).equals(recordSeq(other)));
+  }
+
+  hashCode() {
+    return recordSeq(this).hashCode();
   }
 
   // @pragma Access
 
   has(k) {
-    return this._defaultValues.hasOwnProperty(k);
+    return this._indices.hasOwnProperty(k);
   }
 
   get(k, notSetValue) {
     if (!this.has(k)) {
       return notSetValue;
     }
-    var defaultVal = this._defaultValues[k];
-    return this._map ? this._map.get(k, defaultVal) : defaultVal;
+    const index = this._indices[k];
+    const value = this._values.get(index);
+    return value === undefined ? this._defaultValues[k] : value;
   }
 
   // @pragma Modification
 
-  clear() {
-    if (this.__ownerID) {
-      this._map && this._map.clear();
-      return this;
-    }
-    var RecordType = this.constructor;
-    return RecordType._empty || (RecordType._empty = makeRecord(this, emptyMap()));
-  }
-
   set(k, v) {
-    if (!this.has(k)) {
-      throw new Error('Cannot set unknown key "' + k + '" on ' + recordName(this));
-    }
-    if (this._map && !this._map.has(k)) {
-      var defaultVal = this._defaultValues[k];
-      if (v === defaultVal) {
-        return this;
+    if (this.has(k)) {
+      const newValues = this._values.set(
+        this._indices[k],
+        v === this._defaultValues[k] ? undefined : v
+      );
+      if (newValues !== this._values && !this.__ownerID) {
+        return makeRecord(this, newValues);
       }
     }
-    var newMap = this._map && this._map.set(k, v);
-    if (this.__ownerID || newMap === this._map) {
-      return this;
-    }
-    return makeRecord(this, newMap);
+    return this;
   }
 
   remove(k) {
-    if (!this.has(k)) {
-      return this;
-    }
-    var newMap = this._map && this._map.remove(k);
-    if (this.__ownerID || newMap === this._map) {
-      return this;
-    }
-    return makeRecord(this, newMap);
+    return this.set(k);
+  }
+
+  clear() {
+    const newValues = this._values.clear().setSize(this._keys.length);
+    return this.__ownerID ? this : makeRecord(this, newValues);
   }
 
   wasAltered() {
-    return this._map.wasAltered();
+    return this._values.wasAltered();
+  }
+
+  toSeq() {
+    return recordSeq(this);
+  }
+
+  toJS() {
+    return recordSeq(this).toJS();
   }
 
   __iterator(type, reverse) {
-    return KeyedIterable(this._defaultValues).map((_, k) => this.get(k)).__iterator(type, reverse);
+    return recordSeq(this).__iterator(type, reverse);
   }
 
   __iterate(fn, reverse) {
-    return KeyedIterable(this._defaultValues).map((_, k) => this.get(k)).__iterate(fn, reverse);
+    return recordSeq(this).__iterate(fn, reverse);
   }
 
   __ensureOwner(ownerID) {
     if (ownerID === this.__ownerID) {
       return this;
     }
-    var newMap = this._map && this._map.__ensureOwner(ownerID);
+    const newValues = this._values.__ensureOwner(ownerID);
     if (!ownerID) {
       this.__ownerID = ownerID;
-      this._map = newMap;
+      this._values = newValues;
       return this;
     }
-    return makeRecord(this, newMap, ownerID);
+    return makeRecord(this, newValues, ownerID);
   }
 }
 
-var RecordPrototype = Record.prototype;
+Record.isRecord = isRecord;
+Record.getDescriptiveName = recordName;
+const RecordPrototype = Record.prototype;
+RecordPrototype[IS_RECORD_SENTINEL] = true;
 RecordPrototype[DELETE] = RecordPrototype.remove;
-RecordPrototype.deleteIn =
-RecordPrototype.removeIn = MapPrototype.removeIn;
+RecordPrototype.deleteIn = (RecordPrototype.removeIn = MapPrototype.removeIn);
+RecordPrototype.getIn = CollectionPrototype.getIn;
+RecordPrototype.hasIn = CollectionPrototype.hasIn;
 RecordPrototype.merge = MapPrototype.merge;
 RecordPrototype.mergeWith = MapPrototype.mergeWith;
 RecordPrototype.mergeIn = MapPrototype.mergeIn;
@@ -144,11 +187,13 @@ RecordPrototype.updateIn = MapPrototype.updateIn;
 RecordPrototype.withMutations = MapPrototype.withMutations;
 RecordPrototype.asMutable = MapPrototype.asMutable;
 RecordPrototype.asImmutable = MapPrototype.asImmutable;
+RecordPrototype[ITERATOR_SYMBOL] = CollectionPrototype.entries;
+RecordPrototype.toJSON = (RecordPrototype.toObject = CollectionPrototype.toObject);
+RecordPrototype.inspect = (RecordPrototype.toSource = CollectionPrototype.toSource);
 
-
-function makeRecord(likeRecord, map, ownerID) {
-  var record = Object.create(Object.getPrototypeOf(likeRecord));
-  record._map = map;
+function makeRecord(likeRecord, values, ownerID) {
+  const record = Object.create(Object.getPrototypeOf(likeRecord));
+  record._values = values;
   record.__ownerID = ownerID;
   return record;
 }
@@ -157,22 +202,22 @@ function recordName(record) {
   return record._name || record.constructor.name || 'Record';
 }
 
-function setProps(prototype, names) {
-  try {
-    names.forEach(setProp.bind(undefined, prototype));
-  } catch (error) {
-    // Object.defineProperty failed. Probably IE8.
-  }
+function recordSeq(record) {
+  return keyedSeqFromValue(record._keys.map(k => [k, record.get(k)]));
 }
 
 function setProp(prototype, name) {
-  Object.defineProperty(prototype, name, {
-    get: function() {
-      return this.get(name);
-    },
-    set: function(value) {
-      invariant(this.__ownerID, 'Cannot set on an immutable record.');
-      this.set(name, value);
-    }
-  });
+  try {
+    Object.defineProperty(prototype, name, {
+      get: function() {
+        return this.get(name);
+      },
+      set: function(value) {
+        invariant(this.__ownerID, 'Cannot set on an immutable record.');
+        this.set(name, value);
+      }
+    });
+  } catch (error) {
+    // Object.defineProperty failed. Probably IE8.
+  }
 }

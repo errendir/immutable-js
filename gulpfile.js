@@ -1,5 +1,3 @@
-require("harmonize")();
-
 var browserify = require('browserify');
 var browserSync = require('browser-sync');
 var buffer = require('vinyl-buffer');
@@ -12,8 +10,8 @@ var gulp = require('gulp');
 var gutil = require('gulp-util');
 var header = require('gulp-header');
 var Immutable = require('./');
-var jshint = require('gulp-jshint');
 var less = require('gulp-less');
+var mkdirp = require('mkdirp');
 var path = require('path');
 var React = require('react/addons');
 var reactTools = require('react-tools');
@@ -21,11 +19,14 @@ var sequence = require('run-sequence');
 var size = require('gulp-size');
 var source = require('vinyl-source-stream');
 var sourcemaps = require('gulp-sourcemaps');
-var stylish = require('jshint-stylish');
 var through = require('through2');
 var uglify = require('gulp-uglify');
 var vm = require('vm');
 
+function requireFresh(path) {
+  delete require.cache[require.resolve(path)];
+  return require(path);
+}
 
 var SRC_DIR = './pages/src/';
 var BUILD_DIR = './pages/out/';
@@ -37,20 +38,21 @@ gulp.task('clean', function (done) {
 });
 
 gulp.task('readme', function() {
-  var genMarkdownDoc = require('./pages/lib/genMarkdownDoc');
+  var genMarkdownDoc = requireFresh('./pages/lib/genMarkdownDoc');
 
   var readmePath = path.join(__dirname, './README.md');
 
   var fileContents = fs.readFileSync(readmePath, 'utf8');
 
-  var writePath = path.join(__dirname, './pages/resources/readme.json');
+  var writePath = path.join(__dirname, './pages/generated/readme.json');
   var contents = JSON.stringify(genMarkdownDoc(fileContents));
 
+  mkdirp.sync(path.dirname(writePath));
   fs.writeFileSync(writePath, contents);
 });
 
 gulp.task('typedefs', function() {
-  var genTypeDefData = require('./pages/lib/genTypeDefData');
+  var genTypeDefData = requireFresh('./pages/lib/genTypeDefData');
 
   var typeDefPath = path.join(__dirname, './type-definitions/Immutable.d.ts');
 
@@ -61,54 +63,11 @@ gulp.task('typedefs', function() {
     'module Immutable'
   );
 
-  var writePath = path.join(__dirname, './pages/resources/immutable.d.json');
+  var writePath = path.join(__dirname, './pages/generated/immutable.d.json');
   var contents = JSON.stringify(genTypeDefData(typeDefPath, fileSource));
 
+  mkdirp.sync(path.dirname(writePath));
   fs.writeFileSync(writePath, contents);
-
-  var nonAmbientSource = fileContents
-    .replace(
-      /declare\s+module\s+Immutable\s*\{/,
-      '')
-    .replace(
-      /\}[\s\n\r]*declare\s+module\s*.immutable.[\s\n\r]*{[\s\n\r]*export\s*=\s*Immutable[\s\n\r]*\}/m,
-    '');
-  var distPath = path.join(__dirname, 'dist');
-  try { fs.mkdirSync(distPath); } catch (x) { }
-  var nonAmbientPath = path.join(distPath, 'immutable-nonambient.d.ts');
-  fs.writeFileSync(nonAmbientPath, nonAmbientSource);
-
-});
-
-gulp.task('lint', function() {
-  return gulp.src('./app/**/*.js')
-    .pipe(reactTransform())
-    .on('error', handleError)
-    .pipe(jshint({
-      asi: true,
-      browser: true,
-      curly: false,
-      eqeqeq: true,
-      eqnull: true,
-      esnext: true,
-      expr: true,
-      forin: true,
-      freeze: true,
-      immed: true,
-      indent: 2,
-      iterator: true,
-      newcap: false,
-      noarg: true,
-      node: true,
-      noempty: true,
-      nonstandard: true,
-      trailing: true,
-      undef: true,
-      unused: 'vars',
-    }))
-    .pipe(jshint.reporter(stylish))
-    .pipe(jshint.reporter('fail'))
-    .on('error', handleError);
 });
 
 gulp.task('js', gulpJS(''));
@@ -210,7 +169,7 @@ gulp.task('build', function (done) {
 });
 
 gulp.task('default', function (done) {
-  sequence('clean', 'lint', 'build', done);
+  sequence('clean', 'build', done);
 });
 
 // watch files for changes and reload
@@ -222,22 +181,27 @@ gulp.task('dev', ['default'], function() {
     }
   });
 
-  gulp.watch('./app/**/*.less', ['less', 'less-docs']);
-  gulp.watch('./app/src/**/*.js', ['rebuild-js']);
-  gulp.watch('./app/docs/src/**/*.js', ['rebuild-js-docs']);
-  gulp.watch('./app/**/*.html', ['pre-render', 'pre-render-docs']);
-  gulp.watch('./app/static/**/*', ['statics', 'statics-docs']);
+  gulp.watch('./README.md', ['build']);
+  gulp.watch('./pages/lib/**/*.js', ['build']);
+  gulp.watch('./pages/src/**/*.less', ['less', 'less-docs']);
+  gulp.watch('./pages/src/src/**/*.js', ['rebuild-js']);
+  gulp.watch('./pages/src/docs/src/**/*.js', ['rebuild-js-docs']);
+  gulp.watch('./pages/src/**/*.html', ['pre-render', 'pre-render-docs']);
+  gulp.watch('./pages/src/static/**/*', ['statics', 'statics-docs']);
+  gulp.watch('./type-definitions/*', function () {
+    sequence('typedefs', 'rebuild-js-docs');
+  });
 });
 
 gulp.task('rebuild-js', function (done) {
-  sequence('lint', 'js', ['pre-render'], function () {
+  sequence('js', ['pre-render'], function () {
     browserSync.reload();
     done();
   });
 });
 
 gulp.task('rebuild-js-docs', function (done) {
-  sequence('lint', 'js-docs', ['pre-render-docs'], function () {
+  sequence('js-docs', ['pre-render-docs'], function () {
     browserSync.reload();
     done();
   });

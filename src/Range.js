@@ -7,13 +7,12 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-import { wrapIndex, wholeSlice, resolveBegin, resolveEnd } from './TrieUtils'
-import { IndexedSeq } from './Seq'
-import { Iterator, iteratorValue, iteratorDone } from './Iterator'
+import { wrapIndex, wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
+import { IndexedSeq } from './Seq';
+import { Iterator, iteratorValue, iteratorDone } from './Iterator';
 
-import invariant from './utils/invariant'
-import deepEqual from './utils/deepEqual'
-
+import invariant from './utils/invariant';
+import deepEqual from './utils/deepEqual';
 
 /**
  * Returns a lazy seq of nums from start (inclusive) to end
@@ -21,7 +20,6 @@ import deepEqual from './utils/deepEqual'
  * infinity. When start is equal to end, returns empty list.
  */
 export class Range extends IndexedSeq {
-
   constructor(start, end, step) {
     if (!(this instanceof Range)) {
       return new Range(start, end, step);
@@ -52,19 +50,21 @@ export class Range extends IndexedSeq {
       return 'Range []';
     }
     return 'Range [ ' +
-      this._start + '...' + this._end +
+      this._start +
+      '...' +
+      this._end +
       (this._step !== 1 ? ' by ' + this._step : '') +
-    ' ]';
+      ' ]';
   }
 
   get(index, notSetValue) {
-    return this.has(index) ?
-      this._start + wrapIndex(this, index) * this._step :
-      notSetValue;
+    return this.has(index)
+      ? this._start + wrapIndex(this, index) * this._step
+      : notSetValue;
   }
 
   includes(searchValue) {
-    var possibleIndex = (searchValue - this._start) / this._step;
+    const possibleIndex = (searchValue - this._start) / this._step;
     return possibleIndex >= 0 &&
       possibleIndex < this.size &&
       possibleIndex === Math.floor(possibleIndex);
@@ -79,15 +79,19 @@ export class Range extends IndexedSeq {
     if (end <= begin) {
       return new Range(0, 0);
     }
-    return new Range(this.get(begin, this._end), this.get(end, this._end), this._step);
+    return new Range(
+      this.get(begin, this._end),
+      this.get(end, this._end),
+      this._step
+    );
   }
 
   indexOf(searchValue) {
-    var offsetValue = searchValue - this._start;
+    const offsetValue = searchValue - this._start;
     if (offsetValue % this._step === 0) {
-      var index = offsetValue / this._step;
+      const index = offsetValue / this._step;
       if (index >= 0 && index < this.size) {
-        return index
+        return index;
       }
     }
     return -1;
@@ -98,37 +102,41 @@ export class Range extends IndexedSeq {
   }
 
   __iterate(fn, reverse) {
-    var maxIndex = this.size - 1;
-    var step = this._step;
-    var value = reverse ? this._start + maxIndex * step : this._start;
-    for (var ii = 0; ii <= maxIndex; ii++) {
-      if (fn(value, ii, this) === false) {
-        return ii + 1;
+    const size = this.size;
+    const step = this._step;
+    let value = reverse ? this._start + (size - 1) * step : this._start;
+    let i = 0;
+    while (i !== size) {
+      if (fn(value, reverse ? size - ++i : i++, this) === false) {
+        break;
       }
       value += reverse ? -step : step;
     }
-    return ii;
+    return i;
   }
 
   __iterator(type, reverse) {
-    var maxIndex = this.size - 1;
-    var step = this._step;
-    var value = reverse ? this._start + maxIndex * step : this._start;
-    var ii = 0;
+    const size = this.size;
+    const step = this._step;
+    let value = reverse ? this._start + (size - 1) * step : this._start;
+    let i = 0;
     return new Iterator(() => {
-      var v = value;
+      if (i === size) {
+        return iteratorDone();
+      }
+      const v = value;
       value += reverse ? -step : step;
-      return ii > maxIndex ? iteratorDone() : iteratorValue(type, ii++, v);
+      return iteratorValue(type, reverse ? size - ++i : i++, v);
     });
   }
 
   equals(other) {
-    return other instanceof Range ?
-      this._start === other._start &&
-      this._end === other._end &&
-      this._step === other._step :
-      deepEqual(this, other);
+    return other instanceof Range
+      ? this._start === other._start &&
+          this._end === other._end &&
+          this._step === other._step
+      : deepEqual(this, other);
   }
 }
 
-var EMPTY_RANGE;
+let EMPTY_RANGE;
