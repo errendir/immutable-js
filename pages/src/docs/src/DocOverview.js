@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 var React = require('react');
 var Router = require('react-router');
 var { Seq } = require('../../../../');
@@ -10,12 +17,12 @@ var DocOverview = React.createClass({
 
     return (
       <div>
-
-        {doc &&
+        {doc && (
           <section>
             <Markdown contents={doc.synopsis} />
             {doc.description && <Markdown contents={doc.description} />}
-          </section>}
+          </section>
+        )}
 
         <h4 className="groupTitle">API</h4>
 
@@ -32,13 +39,13 @@ var DocOverview = React.createClass({
                     {name + (isFunction ? '()' : '')}
                   </Router.Link>
                 </h3>
-                {t.doc &&
-                  <Markdown className="detail" contents={t.doc.synopsis} />}
+                {t.doc && (
+                  <Markdown className="detail" contents={t.doc.synopsis} />
+                )}
               </section>
             );
           })
           .toArray()}
-
       </div>
     );
   }

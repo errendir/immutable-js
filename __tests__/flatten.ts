@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import * as jasmineCheck from 'jasmine-check';
@@ -28,13 +35,13 @@ describe('flatten', () => {
   type SeqType = number | Array<number> | Collection<number, number>;
 
   it('flattens only Sequences (not sequenceables)', () => {
-    let nested = Seq.of<SeqType>(Range(1, 3), [3, 4], List.of(5, 6, 7), 8);
+    let nested = Seq<SeqType>([Range(1, 3), [3, 4], List([5, 6, 7]), 8]);
     let flat = nested.flatten();
     expect(flat.toJS()).toEqual([1, 2, [3, 4], 5, 6, 7, 8]);
   });
 
   it('can be reversed', () => {
-    let nested = Seq.of<SeqType>(Range(1, 3), [3, 4], List.of(5, 6, 7), 8);
+    let nested = Seq<SeqType>([Range(1, 3), [3, 4], List([5, 6, 7]), 8]);
     let flat = nested.flatten();
     let reversed = flat.reverse();
     expect(reversed.toJS()).toEqual([8, 7, 6, 5, [3, 4], 2, 1]);

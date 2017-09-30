@@ -1,4 +1,9 @@
-/*
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
  * @flow
  */
 
@@ -13,6 +18,7 @@ import Immutable, {
   Seq,
   Range,
   Repeat,
+  Record,
   OrderedMap,
   OrderedSet,
 } from '../../'
@@ -25,6 +31,7 @@ import type {
   KeyedSeq,
   IndexedSeq,
   SetSeq,
+  RecordOf,
 } from '../../'
 
 /**
@@ -773,3 +780,26 @@ let numberSeq = Seq([ 1, 2, 3 ])
 // $ExpectError
 let numberSeqSize: number = numberSeq.size
 let maybeNumberSeqSize: ?number = numberSeq.size
+
+/* Record */
+
+type PersonRecordMembers = { age: number, name: string }
+const PersonRecordClass = Record(({
+  age: 12,
+  name: 'Facebook',
+}: PersonRecordMembers))
+type PersonRecordInstance = RecordOf<PersonRecordMembers>
+
+const personRecordInstance: PersonRecordInstance = PersonRecordClass({ age: 25 })
+
+// $ExpectError
+{ const age: string = personRecordInstance.get('age') }
+// $ExpectError
+{ const age: string = personRecordInstance.age }
+{ const age: number = personRecordInstance.get('age') }
+{ const age: number = personRecordInstance.age }
+
+// $ExpectError
+personRecordInstance.set('invalid', 25)
+personRecordInstance.set('name', '25')
+personRecordInstance.set('age', 33)

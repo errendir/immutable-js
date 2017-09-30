@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import * as jasmineCheck from 'jasmine-check';
@@ -85,10 +92,10 @@ describe('Equality', () => {
   });
 
   it('compares sequences', () => {
-    let arraySeq = Seq.of(1, 2, 3);
+    let arraySeq = Seq([1, 2, 3]);
     let arraySeq2 = Seq([1, 2, 3]);
     expectIs(arraySeq, arraySeq);
-    expectIs(arraySeq, Seq.of(1, 2, 3));
+    expectIs(arraySeq, Seq([1, 2, 3]));
     expectIs(arraySeq2, arraySeq2);
     expectIs(arraySeq2, Seq([1, 2, 3]));
     expectIsNot(arraySeq, [1, 2, 3]);
@@ -99,12 +106,12 @@ describe('Equality', () => {
   });
 
   it('compares lists', () => {
-    let list = List.of(1, 2, 3);
+    let list = List([1, 2, 3]);
     expectIs(list, list);
     expectIsNot(list, [1, 2, 3]);
 
-    expectIs(list, Seq.of(1, 2, 3));
-    expectIs(list, List.of(1, 2, 3));
+    expectIs(list, Seq([1, 2, 3]));
+    expectIs(list, List([1, 2, 3]));
 
     let listLonger = list.push(4);
     expectIsNot(list, listLonger);
@@ -135,9 +142,9 @@ describe('Equality', () => {
 
     it('differentiates decimals', () => {
       expect(
-        Seq.of(1.5).hashCode(),
+        Seq([1.5]).hashCode(),
       ).not.toBe(
-        Seq.of(1.6).hashCode(),
+        Seq([1.6]).hashCode(),
       );
     });
 

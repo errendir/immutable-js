@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 var React = require('react');
 var ReactTransitionEvents = require('react/lib/ReactTransitionEvents');
 var Router = require('react-router');
@@ -88,66 +95,66 @@ var MemberDoc = React.createClass({
           </Router.Link>
         </h3>
         <TransitionGroup childFactory={makeSlideDown}>
-          {showDetail &&
+          {showDetail && (
             <div key="detail" className="detail">
-              {doc.synopsis &&
-                <MarkDown className="synopsis" contents={doc.synopsis} />}
-              {isProp
-                ? <code className="codeBlock memberSignature">
-                    <MemberDef
+              {doc.synopsis && (
+                <MarkDown className="synopsis" contents={doc.synopsis} />
+              )}
+              {isProp ? (
+                <code className="codeBlock memberSignature">
+                  <MemberDef
+                    module={module}
+                    member={{ name, type: def.type }}
+                  />
+                </code>
+              ) : (
+                <code className="codeBlock memberSignature">
+                  {def.signatures.map((callSig, i) => [
+                    <CallSigDef
+                      key={i}
+                      info={typeInfo}
                       module={module}
-                      member={{ name, type: def.type }}
-                    />
-                  </code>
-                : <code className="codeBlock memberSignature">
-                    {def.signatures.map((callSig, i) => [
-                      <CallSigDef
-                        key={i}
-                        info={typeInfo}
-                        module={module}
-                        name={name}
-                        callSig={callSig}
-                      />,
-                      '\n'
-                    ])}
-                  </code>}
-              {member.inherited &&
+                      name={name}
+                      callSig={callSig}
+                    />,
+                    '\n'
+                  ])}
+                </code>
+              )}
+              {member.inherited && (
                 <section>
-                  <h4 className="infoHeader">
-                    Inherited from
-                  </h4>
+                  <h4 className="infoHeader">Inherited from</h4>
                   <code>
                     <Router.Link to={'/' + member.inherited.name + '/' + name}>
                       {member.inherited.name + '#' + name}
                     </Router.Link>
                   </code>
-                </section>}
-              {member.overrides &&
+                </section>
+              )}
+              {member.overrides && (
                 <section>
-                  <h4 className="infoHeader">
-                    Overrides
-                  </h4>
+                  <h4 className="infoHeader">Overrides</h4>
                   <code>
                     <Router.Link to={'/' + member.overrides.name + '/' + name}>
                       {member.overrides.name + '#' + name}
                     </Router.Link>
                   </code>
-                </section>}
+                </section>
+              )}
               {doc.notes &&
                 doc.notes.map((note, i) => (
                   <section key={i}>
-                    <h4 className="infoHeader">
-                      {note.name}
-                    </h4>
-                    {note.name === 'alias'
-                      ? <code><CallSigDef name={note.body} /></code>
-                      : <MarkDown
-                          className="discussion"
-                          contents={note.body}
-                        />}
+                    <h4 className="infoHeader">{note.name}</h4>
+                    {note.name === 'alias' ? (
+                      <code>
+                        <CallSigDef name={note.body} />
+                      </code>
+                    ) : (
+                      <MarkDown className="discussion" contents={note.body} />
+                    )}
                   </section>
                 ))}
-              {doc.description &&
+              {doc.description && (
                 <section>
                   <h4 className="infoHeader">
                     {doc.description.substr(0, 5) === '<code'
@@ -155,8 +162,10 @@ var MemberDoc = React.createClass({
                       : 'Discussion'}
                   </h4>
                   <MarkDown className="discussion" contents={doc.description} />
-                </section>}
-            </div>}
+                </section>
+              )}
+            </div>
+          )}
         </TransitionGroup>
       </div>
     );
@@ -190,12 +199,9 @@ var SlideDown = React.createClass({
       done();
     };
     ReactTransitionEvents.addEndEventListener(node, endListener);
-    this.timeout = setTimeout(
-      () => {
-        node.style.height = end;
-      },
-      17
-    );
+    this.timeout = setTimeout(() => {
+      node.style.height = end;
+    }, 17);
   },
 
   render() {

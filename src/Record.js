@@ -1,10 +1,8 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 import { KeyedCollection } from './Collection';
@@ -86,8 +84,12 @@ export class Record {
   }
 
   equals(other) {
-    return this === other ||
-      (this._keys === other._keys && recordSeq(this).equals(recordSeq(other)));
+    return (
+      this === other ||
+      (other &&
+        this._keys === other._keys &&
+        recordSeq(this).equals(recordSeq(other)))
+    );
   }
 
   hashCode() {
@@ -172,7 +174,7 @@ Record.getDescriptiveName = recordName;
 const RecordPrototype = Record.prototype;
 RecordPrototype[IS_RECORD_SENTINEL] = true;
 RecordPrototype[DELETE] = RecordPrototype.remove;
-RecordPrototype.deleteIn = (RecordPrototype.removeIn = MapPrototype.removeIn);
+RecordPrototype.deleteIn = RecordPrototype.removeIn = MapPrototype.removeIn;
 RecordPrototype.getIn = CollectionPrototype.getIn;
 RecordPrototype.hasIn = CollectionPrototype.hasIn;
 RecordPrototype.merge = MapPrototype.merge;
@@ -188,8 +190,10 @@ RecordPrototype.withMutations = MapPrototype.withMutations;
 RecordPrototype.asMutable = MapPrototype.asMutable;
 RecordPrototype.asImmutable = MapPrototype.asImmutable;
 RecordPrototype[ITERATOR_SYMBOL] = CollectionPrototype.entries;
-RecordPrototype.toJSON = (RecordPrototype.toObject = CollectionPrototype.toObject);
-RecordPrototype.inspect = (RecordPrototype.toSource = CollectionPrototype.toSource);
+RecordPrototype.toJSON = RecordPrototype.toObject =
+  CollectionPrototype.toObject;
+RecordPrototype.inspect = RecordPrototype.toSource =
+  CollectionPrototype.toSource;
 
 function makeRecord(likeRecord, values, ownerID) {
   const record = Object.create(Object.getPrototypeOf(likeRecord));

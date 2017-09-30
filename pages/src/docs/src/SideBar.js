@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 var React = require('react');
 var Router = require('react-router');
 var { Seq } = require('../../../../');
@@ -54,11 +61,10 @@ var SideBar = React.createClass({
 
     var memberGroups = this.props.memberGroups;
 
-    var members = !isFocus || isFunction
-      ? null
-      : <div className="members">
-
-          {call &&
+    var members =
+      !isFocus || isFunction ? null : (
+        <div className="members">
+          {call && (
             <section>
               <h4 className="groupTitle">Construction</h4>
               <div>
@@ -66,9 +72,10 @@ var SideBar = React.createClass({
                   {typeName + '()'}
                 </Router.Link>
               </div>
-            </section>}
+            </section>
+          )}
 
-          {functions.count() > 0 &&
+          {functions.count() > 0 && (
             <section>
               <h4 className="groupTitle">Static Methods</h4>
               {functions
@@ -80,9 +87,10 @@ var SideBar = React.createClass({
                   </div>
                 ))
                 .toArray()}
-            </section>}
+            </section>
+          )}
 
-          {types.count() > 0 &&
+          {types.count() > 0 && (
             <section>
               <h4 className="groupTitle">Types</h4>
               {types
@@ -94,7 +102,8 @@ var SideBar = React.createClass({
                   </div>
                 ))
                 .toArray()}
-            </section>}
+            </section>
+          )}
 
           <section>
             {Seq(memberGroups)
@@ -121,7 +130,8 @@ var SideBar = React.createClass({
               .flatten()
               .toArray()}
           </section>
-        </div>;
+        </div>
+      );
 
     return (
       <div key={typeName}>

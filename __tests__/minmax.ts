@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import * as jasmineCheck from 'jasmine-check';
@@ -42,22 +49,22 @@ describe('max', () => {
 
   it('surfaces NaN, null, and undefined', () => {
     expect(
-      is(NaN, Seq.of(1, 2, 3, 4, 5, NaN).max()),
+      is(NaN, Seq([1, 2, 3, 4, 5, NaN]).max()),
     ).toBe(true);
     expect(
-      is(NaN, Seq.of(NaN, 1, 2, 3, 4, 5).max()),
+      is(NaN, Seq([NaN, 1, 2, 3, 4, 5]).max()),
     ).toBe(true);
     expect(
-      is(null, Seq.of('A', 'B', 'C', 'D', null).max()),
+      is(null, Seq(['A', 'B', 'C', 'D', null]).max()),
     ).toBe(true);
     expect(
-      is(null, Seq.of(null, 'A', 'B', 'C', 'D').max()),
+      is(null, Seq([null, 'A', 'B', 'C', 'D']).max()),
     ).toBe(true);
   });
 
   it('null treated as 0 in default iterator', () => {
     expect(
-      is(2, Seq.of(-1, -2, null, 1, 2).max()),
+      is(2, Seq([-1, -2, null, 1, 2]).max()),
     ).toBe(true);
   });
 

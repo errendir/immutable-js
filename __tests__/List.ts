@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import * as jasmineCheck from 'jasmine-check';
@@ -187,6 +194,14 @@ describe('List', () => {
   it('hasIn doesnt contain elements at non-empty string keys', () => {
     let list: any = List.of(1, 2, 3, 4, 5);
     expect(list.hasIn(['str'])).toBe(false);
+  });
+
+  it('hasIn doesnt throw for bad key-path', () => {
+    let list = List.of(1, 2, 3, 4, 5);
+    expect(list.hasIn([1, 2, 3])).toBe(false);
+
+    let list2 = List([{}]);
+    expect(list2.hasIn([0, 'bad'])).toBe(false);
   });
 
   it('setting creates a new instance', () => {

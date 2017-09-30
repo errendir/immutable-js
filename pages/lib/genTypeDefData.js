@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 var ts = require('typescript');
 
 var TypeKind = require('./TypeKind');
@@ -262,6 +269,10 @@ function DocVisitor(source) {
 
   function parseType(node) {
     switch (node.kind) {
+      case ts.SyntaxKind.NeverKeyword:
+        return {
+          k: TypeKind.NeverKeyword
+        };
       case ts.SyntaxKind.AnyKeyword:
         return {
           k: TypeKind.Any
@@ -303,9 +314,10 @@ function DocVisitor(source) {
           index: parseType(node.indexType)
         };
       case ts.SyntaxKind.TypeOperator:
-        var operator = node.operator === ts.SyntaxKind.KeyOfKeyword
-          ? 'keyof'
-          : node.operator === ts.SyntaxKind.ReadonlyKeyword
+        var operator =
+          node.operator === ts.SyntaxKind.KeyOfKeyword
+            ? 'keyof'
+            : node.operator === ts.SyntaxKind.ReadonlyKeyword
               ? 'readonly'
               : undefined;
         if (!operator) {
@@ -384,10 +396,12 @@ function DocVisitor(source) {
           members: [
             {
               index: true,
-              params: {
-                name: 'key',
-                type: TypeKind.String
-              },
+              params: [
+                {
+                  name: 'key',
+                  type: { k: TypeKind.String }
+                }
+              ],
               type: parseType(node.type)
             }
           ]
@@ -438,7 +452,10 @@ function getDoc(node) {
     .slice(1, -1)
     .map(l => l.trim().substr(2));
 
-  var paragraphs = lines.filter(l => l[0] !== '@').join('\n').split('\n\n');
+  var paragraphs = lines
+    .filter(l => l[0] !== '@')
+    .join('\n')
+    .split('\n\n');
 
   var synopsis = paragraphs && paragraphs.shift();
   var description = paragraphs && paragraphs.join('\n\n');

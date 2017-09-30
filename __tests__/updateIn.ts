@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import { fromJS, List, Map, Set } from '../';
@@ -28,17 +35,29 @@ describe('updateIn', () => {
   });
 
   it('deep get throws if non-readable path', () => {
-    let deep = Map({ key: { regular: "jsobj" }, list: List([ Map({num: 10}) ]) });
-    expect(() =>
-      deep.getIn(["key", "foo", "item"]),
-    ).toThrow(
-      'Invalid keyPath: Value at ["key"] does not have a .get() method: [object Object]',
-    );
-    expect(() =>
-      deep.getIn(["list", 0, "num", "badKey"]),
-    ).toThrow(
-      'Invalid keyPath: Value at ["list",0,"num"] does not have a .get() method: 10',
-    );
+    let realWarn = console.warn;
+    let warnings: Array<any> = [];
+    console.warn = w => warnings.push(w);
+
+    try {
+      let deep = Map({ key: { regular: "jsobj" }, list: List([ Map({num: 10}) ]) });
+      deep.getIn(["key", "foo", "item"]);
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]).toBe(
+        'Invalid keyPath: Value at ["key"] does not have a .get() method: [object Object]' +
+        '\nThis warning will throw in a future version',
+      );
+
+      warnings.length = 0;
+      deep.getIn(["list", 0, "num", "badKey"]);
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]).toBe(
+        'Invalid keyPath: Value at ["list",0,"num"] does not have a .get() method: 10' +
+        '\nThis warning will throw in a future version',
+      );
+    } finally {
+      console.warn = realWarn;
+    }
   });
 
   it('deep has throws without list or array-like', () => {

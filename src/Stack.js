@@ -1,10 +1,8 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
@@ -81,16 +79,13 @@ export class Stack extends IndexedCollection {
     assertNotInfinite(iter.size);
     let newSize = this.size;
     let head = this._head;
-    iter.__iterate(
-      value => {
-        newSize++;
-        head = {
-          value: value,
-          next: head
-        };
-      },
-      /* reverse */ true
-    );
+    iter.__iterate(value => {
+      newSize++;
+      head = {
+        value: value,
+        next: head
+      };
+    }, /* reverse */ true);
     if (this.__ownerID) {
       this.size = newSize;
       this._head = head;
@@ -215,6 +210,11 @@ StackPrototype.wasAltered = MapPrototype.wasAltered;
 StackPrototype.shift = StackPrototype.pop;
 StackPrototype.unshift = StackPrototype.push;
 StackPrototype.unshiftAll = StackPrototype.pushAll;
+StackPrototype['@@transducer/init'] = StackPrototype.asMutable;
+StackPrototype['@@transducer/step'] = function(result, arr) {
+  return result.unshift(arr);
+};
+StackPrototype['@@transducer/result'] = MapPrototype['@@transducer/result'];
 
 function makeStack(size, head, ownerID, hash) {
   const map = Object.create(StackPrototype);

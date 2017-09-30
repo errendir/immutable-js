@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 var { Seq } = require('../../');
 var marked = require('marked');
 var prism = require('./prism');
@@ -51,6 +58,23 @@ marked.setOptions({
 
 var renderer = new marked.Renderer();
 
+const runkitRegExp = /^<!--\s*runkit:activate((.|\n)*)-->(.|\n)*$/;
+const runkitContext = { options: '{}', activated: false };
+
+renderer.html = function(text) {
+  const result = runkitRegExp.exec(text);
+
+  if (!result) return text;
+
+  runkitContext.activated = true;
+  try {
+    runkitContext.options = result[1] ? JSON.parse(result[1]) : {};
+  } catch (e) {
+    runkitContext.options = {};
+  }
+  return text;
+};
+
 renderer.code = function(code, lang, escaped) {
   if (this.options.highlight) {
     var out = this.options.highlight(code, lang);
@@ -59,9 +83,22 @@ renderer.code = function(code, lang, escaped) {
       code = out;
     }
   }
-  return '<code class="codeBlock">' +
+
+  const runItButton = runkitContext.activated
+    ? '<a class = "try-it" data-options="' +
+      escape(JSON.stringify(runkitContext.options)) +
+      '" onClick = "runIt(this)">run it</a>'
+    : '';
+
+  runkitContext.activated = false;
+  runkitContext.options = '{}';
+
+  return (
+    '<code class="codeBlock">' +
     (escaped ? code : escapeCode(code, true)) +
-    '</code>';
+    runItButton +
+    '</code>'
+  );
 };
 
 var METHOD_RX = /^(\w+)(?:[#.](\w+))?(?:\(\))?$/;
@@ -71,7 +108,8 @@ var MDN_TYPES = {
   Object: true,
   JSON: true
 };
-var MDN_BASE_URL = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/';
+var MDN_BASE_URL =
+  'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/';
 
 renderer.codespan = function(text) {
   return '<code>' + decorateCodeSpan(text, this.options) + '</code>';
@@ -94,12 +132,9 @@ function decorateCodeSpan(text, options) {
   if (method) {
     method = method.slice(1).filter(Boolean);
     if (MDN_TYPES[method[0]]) {
-      return '<a href="' +
-        MDN_BASE_URL +
-        method.join('/') +
-        '">' +
-        text +
-        '</a>';
+      return (
+        '<a href="' + MDN_BASE_URL + method.join('/') + '">' + text + '</a>'
+      );
     }
     if (
       context.typePath &&
@@ -109,13 +144,15 @@ function decorateCodeSpan(text, options) {
       var path = findPath(context, method);
       if (path) {
         var relPath = context.relPath || '';
-        return '<a target="_self" href="' +
+        return (
+          '<a target="_self" href="' +
           relPath +
           '#/' +
           path.slice(1).join('/') +
           '">' +
           text +
-          '</a>';
+          '</a>'
+        );
       }
     }
   }

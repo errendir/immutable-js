@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 var React = require('react');
 var assign = require('react/lib/Object.assign');
 var Router = require('react-router');
@@ -6,6 +13,8 @@ var TypeDocumentation = require('./TypeDocumentation');
 var defs = require('../../../lib/getTypeDefs');
 
 var { Route, DefaultRoute, RouteHandler } = Router;
+
+require('../../../lib/runkit-embed');
 
 var Documentation = React.createClass({
   render() {
@@ -120,21 +129,15 @@ module.exports = React.createClass({
   // TODO: replace this. this is hacky and probably wrong
 
   componentDidMount() {
-    setTimeout(
-      () => {
-        this.pageData.type = '';
-      },
-      0
-    );
+    setTimeout(() => {
+      this.pageData.type = '';
+    }, 0);
   },
 
   componentDidUpdate() {
-    setTimeout(
-      () => {
-        this.pageData.type = '';
-      },
-      0
-    );
+    setTimeout(() => {
+      this.pageData.type = '';
+    }, 0);
   },
 
   render() {

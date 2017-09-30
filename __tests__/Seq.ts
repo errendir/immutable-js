@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import { isCollection, isIndexed, Seq } from '../';
@@ -28,12 +35,8 @@ describe('Seq', () => {
     expect(Seq(new Foo()).size).toBe(2);
   });
 
-  it('of accepts varargs', () => {
-    expect(Seq.of(1, 2, 3).size).toBe(3);
-  });
-
   it('accepts another sequence', () => {
-    let seq = Seq.of(1, 2, 3);
+    let seq = Seq([1, 2, 3]);
     expect(Seq(seq).size).toBe(3);
   });
 
@@ -59,7 +62,7 @@ describe('Seq', () => {
   });
 
   it('detects sequences', () => {
-    let seq = Seq.of(1, 2, 3);
+    let seq = Seq([1, 2, 3]);
     expect(Seq.isSeq(seq)).toBe(true);
     expect(isCollection(seq)).toBe(true);
   });

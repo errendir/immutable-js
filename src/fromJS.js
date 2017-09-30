@@ -1,10 +1,8 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 import { KeyedSeq, IndexedSeq } from './Seq';
@@ -35,7 +33,8 @@ function fromJSWith(stack, converter, value, key, keyPath, parentValue) {
       parentValue,
       key,
       toSeq(value).map((v, k) =>
-        fromJSWith(stack, converter, v, k, keyPath, value)),
+        fromJSWith(stack, converter, v, k, keyPath, value)
+      ),
       keyPath && keyPath.slice()
     );
     stack.pop();
@@ -50,6 +49,7 @@ function defaultConverter(k, v) {
 }
 
 function isPlainObj(value) {
-  return value &&
-    (value.constructor === Object || value.constructor === undefined);
+  return (
+    value && (value.constructor === Object || value.constructor === undefined)
+  );
 }

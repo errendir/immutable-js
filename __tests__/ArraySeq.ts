@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import { Seq } from '../';
@@ -40,7 +47,7 @@ describe('ArraySequence', () => {
   });
 
   it('counts from the end of the sequence on negative index', () => {
-    let i = Seq.of(1, 2, 3, 4, 5, 6, 7);
+    let i = Seq([1, 2, 3, 4, 5, 6, 7]);
     expect(i.get(-1)).toBe(7);
     expect(i.get(-5)).toBe(3);
     expect(i.get(-9)).toBe(undefined);

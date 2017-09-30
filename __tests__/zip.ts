@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import * as jasmineCheck from 'jasmine-check';
@@ -9,7 +16,7 @@ describe('zip', () => {
 
   it('zips lists into a list of tuples', () => {
     expect(
-      Seq.of(1, 2, 3).zip(Seq.of(4, 5, 6)).toArray(),
+      Seq([1, 2, 3]).zip(Seq([4, 5, 6])).toArray(),
     ).toEqual(
       [[1, 4], [2, 5], [3, 6]],
     );
@@ -17,7 +24,7 @@ describe('zip', () => {
 
   it('zips with infinite lists', () => {
     expect(
-      Range().zip(Seq.of('A', 'B', 'C')).toArray(),
+      Range().zip(Seq(['A', 'B', 'C'])).toArray(),
     ).toEqual(
       [[0, 'A'], [1, 'B'], [2, 'C']],
     );
@@ -43,9 +50,9 @@ describe('zip', () => {
 
     it('zips with a custom function', () => {
       expect(
-        Seq.of(1, 2, 3).zipWith<number, number>(
+        Seq([1, 2, 3]).zipWith<number, number>(
           (a, b) => a + b,
-          Seq.of(4, 5, 6),
+          Seq([4, 5, 6]),
         ).toArray(),
       ).toEqual(
         [5, 7, 9],
@@ -54,10 +61,10 @@ describe('zip', () => {
 
     it('can zip to create immutable collections', () => {
       expect(
-        Seq.of(1, 2, 3).zipWith(
+        Seq([1, 2, 3]).zipWith(
           function () { return List(arguments); },
-          Seq.of(4, 5, 6),
-          Seq.of(7, 8, 9),
+          Seq([4, 5, 6]),
+          Seq([7, 8, 9]),
         ).toJS(),
       ).toEqual(
         [[1, 4, 7], [2, 5, 8], [3, 6, 9]],
@@ -66,13 +73,33 @@ describe('zip', () => {
 
   });
 
+  describe('zipAll', () => {
+
+    it('fills in the empty zipped values with undefined', () => {
+      expect(
+        Seq([1, 2, 3]).zipAll(Seq([4])).toArray(),
+      ).toEqual(
+        [[1, 4], [2, undefined], [3, undefined]],
+      );
+    });
+
+    check.it('is always the size of the longest sequence', [gen.notEmpty(gen.array(gen.posInt))], lengths => {
+      const ranges = lengths.map(l => Range(0, l));
+      const first = ranges.shift();
+      const zipped = first.zipAll.apply(first, ranges);
+      const longestLength = Math.max.apply(Math, lengths);
+      expect(zipped.size).toBe(longestLength);
+    });
+
+  });
+
   describe('interleave', () => {
 
     it('interleaves multiple collections', () => {
       expect(
-        Seq.of(1, 2, 3).interleave(
-          Seq.of(4, 5, 6),
-          Seq.of(7, 8, 9),
+        Seq([1, 2, 3]).interleave(
+          Seq([4, 5, 6]),
+          Seq([7, 8, 9]),
         ).toArray(),
       ).toEqual(
         [1, 4, 7, 2, 5, 8, 3, 6, 9],
@@ -80,9 +107,9 @@ describe('zip', () => {
     });
 
     it('stops at the shortest collection', () => {
-      let i = Seq.of(1, 2, 3).interleave(
-        Seq.of(4, 5),
-        Seq.of(7, 8, 9),
+      let i = Seq([1, 2, 3]).interleave(
+        Seq([4, 5]),
+        Seq([7, 8, 9]),
       );
       expect(i.size).toBe(6);
       expect(i.toArray()).toEqual(
@@ -92,7 +119,7 @@ describe('zip', () => {
 
     it('with infinite lists', () => {
       let r: Seq.Indexed<any> = Range();
-      let i = r.interleave(Seq.of('A', 'B', 'C'));
+      let i = r.interleave(Seq(['A', 'B', 'C']));
       expect(i.size).toBe(6);
       expect(i.toArray()).toEqual(
         [0, 'A', 1, 'B', 2, 'C'],

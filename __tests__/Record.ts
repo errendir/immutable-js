@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
 
 import { isKeyed, Record, Seq } from '../';
@@ -80,6 +87,13 @@ describe('Record', () => {
     let t1 = MyType({ a: 10 });
     let t2 = MyType({ a: 10, b: 2 });
     expect(t1.equals(t2));
+  });
+
+  it('if compared against undefined or null should return false', () => {
+    const MyType = Record({ a: 1, b: 2 });
+    const t1 = new MyType();
+    expect(t1.equals(undefined)).toBeFalsy();
+    expect(t1.equals(null)).toBeFalsy();
   });
 
   it('merges in Objects and other Records', () => {
