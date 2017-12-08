@@ -313,5 +313,17 @@ describe('Set', () => {
     expect(s2.diffFrom(s1).removed.toArray()).toEqual(['b']);
   });
 
+  it('computes correct diff with on sets of objects', () => {
+    const objA = { iAmAnObjectA: true };
+    const objB = {};
+    const objC = {};
+    const s1 = Set([objA, objB]);
+    const s2 = s1.remove(objB).add(objC);
+
+    const diff = s2.diffFrom(s1);
+    expect(diff.removed.toArray()).toEqual([objB]);
+    expect(diff.added.toArray()).toEqual([objC]);
+  });
+
   // TODO: more tests
 });

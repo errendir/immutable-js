@@ -287,9 +287,8 @@ class ArrayMapNode {
     return new ArrayMapNode(ownerID, newEntries);
   }
 
-  collectAllEntries(collectingArray) {
-    Array.prototype.push.apply(collectingArray, this.entries);
-    return collectingArray;
+  iterateOverEntries(callback) {
+    this.entries.forEach(callback);
   }
 }
 
@@ -398,11 +397,8 @@ class BitmapIndexedNode {
     return hashRanges;
   }
 
-  collectAllEntries(collectingArray) {
-    this.nodes.forEach(
-      node => !!node && node.collectAllEntries(collectingArray)
-    );
-    return collectingArray;
+  iterateOverEntries(callback) {
+    this.nodes.forEach(node => !!node && node.iterateOverEntries(callback));
   }
 }
 
@@ -479,11 +475,8 @@ class HashArrayMapNode {
       .filter(({ node }) => !!node);
   }
 
-  collectAllEntries(collectingArray) {
-    this.nodes.forEach(
-      node => !!node && node.collectAllEntries(collectingArray)
-    );
-    return collectingArray;
+  iterateOverEntries(callback) {
+    this.nodes.forEach(node => !!node && node.iterateOverEntries(callback));
   }
 }
 
@@ -564,9 +557,8 @@ class HashCollisionNode {
     return new HashCollisionNode(ownerID, this.keyHash, newEntries);
   }
 
-  collectAllEntries(collectingArray) {
-    Array.prototype.push.apply(collectingArray, this.entries);
-    return collectingArray;
+  iterateOverEntries(callback) {
+    this.entries.forEach(callback);
   }
 }
 
@@ -607,9 +599,8 @@ class ValueNode {
     return mergeIntoNode(this, ownerID, shift, hash(key), [key, value]);
   }
 
-  collectAllEntries(collectingArray) {
-    collectingArray.push(this.entry);
-    return collectingArray;
+  iterateOverEntries(callback) {
+    callback(this.entry);
   }
 }
 
@@ -900,45 +891,40 @@ const MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
 function processAllEntries(node1, node2, add, remove, update) {
   if (!node1) {
-    node2.collectAllEntries([]).forEach(([key, value]) => {
+    node2.iterateOverEntries(([key, value]) => {
       add(value, key);
     });
     return;
   }
 
   if (!node2) {
-    node1.collectAllEntries([]).forEach(([key, value]) => {
+    node1.iterateOverEntries(([key, value]) => {
       remove(value, key);
     });
     return;
   }
 
-  const allEntries1 = node1.collectAllEntries([]);
-  const allEntries2 = node2.collectAllEntries([]);
-
-  const keyToValue1 = {};
-  const keyToValue2 = {};
-
-  allEntries1.forEach(([key, value]) => {
-    keyToValue1[key] = value;
+  const node1Entries = [];
+  node1.iterateOverEntries(entry => {
+    node1Entries.push(entry);
   });
-
-  allEntries2.forEach(([key, value]) => {
-    keyToValue2[key] = value;
-  });
-
-  allEntries2.forEach(([key, value]) => {
-    const prev = keyToValue1[key];
-    if (prev === undefined) {
+  node2.iterateOverEntries(([key, value]) => {
+    const oldEntryIndex = node1Entries.findIndex(
+      oldEntry => oldEntry !== null && oldEntry[0] === key
+    );
+    if (oldEntryIndex === -1) {
       add(value, key);
-    } else if (prev !== value) {
-      update({ prev, next: value }, key);
+    } else {
+      const oldEntry = node1Entries[oldEntryIndex];
+      if (oldEntry[1] !== value) {
+        update({ prev: oldEntry[1], next: value }, key);
+      }
+      node1Entries[oldEntryIndex] = null;
     }
   });
-
-  allEntries1.forEach(([key, value]) => {
-    if (keyToValue2[key] === undefined) {
-      remove(value, key);
+  node1Entries.forEach(entry => {
+    if (entry !== null) {
+      remove(entry[1], entry[0]);
     }
   });
 }
