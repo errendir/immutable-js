@@ -1,11 +1,11 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
+import { isValueObject } from './Predicates';
 
 /**
  * An extension of the "same-value" algorithm as [described for use by ES6 Map
@@ -58,8 +58,8 @@
  *       assert( a.hashCode() === b.hashCode() );
  *     }
  *
- * All Immutable collections implement `equals` and `hashCode`.
- *
+ * All Immutable collections are Value Objects: they implement `equals()`
+ * and `hashCode()`.
  */
 export function is(valueA, valueB) {
   if (valueA === valueB || (valueA !== valueA && valueB !== valueB)) {
@@ -68,8 +68,10 @@ export function is(valueA, valueB) {
   if (!valueA || !valueB) {
     return false;
   }
-  if (typeof valueA.valueOf === 'function' &&
-      typeof valueB.valueOf === 'function') {
+  if (
+    typeof valueA.valueOf === 'function' &&
+    typeof valueB.valueOf === 'function'
+  ) {
     valueA = valueA.valueOf();
     valueB = valueB.valueOf();
     if (valueA === valueB || (valueA !== valueA && valueB !== valueB)) {
@@ -79,10 +81,9 @@ export function is(valueA, valueB) {
       return false;
     }
   }
-  if (typeof valueA.equals === 'function' &&
-      typeof valueB.equals === 'function' &&
-      valueA.equals(valueB)) {
-    return true;
-  }
-  return false;
+  return !!(
+    isValueObject(valueA) &&
+    isValueObject(valueB) &&
+    valueA.equals(valueB)
+  );
 }

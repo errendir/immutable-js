@@ -1,45 +1,63 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
-import { is } from './is'
-import { fromJS } from './fromJS'
-import { isIterable, KeyedIterable, isOrdered } from './Iterable'
-import { KeyedCollection } from './Collection'
-import { DELETE, SHIFT, SIZE, MASK, NOT_SET, CHANGE_LENGTH, DID_ALTER, OwnerID,
-          MakeRef, SetRef, arrCopy } from './TrieUtils'
-import { hash } from './Hash'
-import { Iterator, iteratorValue, iteratorDone } from './Iterator'
-import { sortFactory } from './Operations'
-import forceIterator from './utils/forceIterator'
-import invariant from './utils/invariant'
-import assertNotInfinite from './utils/assertNotInfinite'
+import { is } from './is';
+import { Collection, KeyedCollection } from './Collection';
+import { isOrdered } from './Predicates';
+import {
+  DELETE,
+  SHIFT,
+  SIZE,
+  MASK,
+  NOT_SET,
+  CHANGE_LENGTH,
+  DID_ALTER,
+  OwnerID,
+  MakeRef,
+  SetRef,
+} from './TrieUtils';
+import { hash } from './Hash';
+import { Iterator, iteratorValue, iteratorDone } from './Iterator';
+import { sortFactory } from './Operations';
+import arrCopy from './utils/arrCopy';
+import assertNotInfinite from './utils/assertNotInfinite';
+import { setIn } from './methods/setIn';
+import { deleteIn } from './methods/deleteIn';
+import { update } from './methods/update';
+import { updateIn } from './methods/updateIn';
+import { merge, mergeWith } from './methods/merge';
+import { mergeDeep, mergeDeepWith } from './methods/mergeDeep';
+import { mergeIn } from './methods/mergeIn';
+import { mergeDeepIn } from './methods/mergeDeepIn';
+import { withMutations } from './methods/withMutations';
+import { asMutable } from './methods/asMutable';
+import { asImmutable } from './methods/asImmutable';
+import { wasAltered } from './methods/wasAltered';
 
-import { OrderedMap } from './OrderedMap'
-
+import { OrderedMap } from './OrderedMap';
 
 export class Map extends KeyedCollection {
-
   // @pragma Construction
 
   constructor(value) {
-    return value === null || value === undefined ? emptyMap() :
-      isMap(value) && !isOrdered(value) ? value :
-      emptyMap().withMutations(map => {
-        var iter = KeyedIterable(value);
-        assertNotInfinite(iter.size);
-        iter.forEach((v, k) => map.set(k, v));
-      });
+    return value === null || value === undefined
+      ? emptyMap()
+      : isMap(value) && !isOrdered(value)
+        ? value
+        : emptyMap().withMutations(map => {
+            const iter = KeyedCollection(value);
+            assertNotInfinite(iter.size);
+            iter.forEach((v, k) => map.set(k, v));
+          });
   }
 
   static of(...keyValues) {
     return emptyMap().withMutations(map => {
-      for (var i = 0; i < keyValues.length; i += 2) {
+      for (let i = 0; i < keyValues.length; i += 2) {
         if (i + 1 >= keyValues.length) {
           throw new Error('Missing value for key: ' + keyValues[i]);
         }
@@ -55,9 +73,9 @@ export class Map extends KeyedCollection {
   // @pragma Access
 
   get(k, notSetValue) {
-    return this._root ?
-      this._root.get(0, undefined, k, notSetValue) :
-      notSetValue;
+    return this._root
+      ? this._root.get(0, undefined, k, notSetValue)
+      : notSetValue;
   }
 
   // @pragma Modification
@@ -66,36 +84,20 @@ export class Map extends KeyedCollection {
     return updateMap(this, k, v);
   }
 
-  setIn(keyPath, v) {
-    return this.updateIn(keyPath, NOT_SET, () => v);
-  }
-
   remove(k) {
     return updateMap(this, k, NOT_SET);
   }
 
-  deleteIn(keyPath) {
-    return this.updateIn(keyPath, () => NOT_SET);
-  }
+  deleteAll(keys) {
+    const collection = Collection(keys);
 
-  update(k, notSetValue, updater) {
-    return arguments.length === 1 ?
-      k(this) :
-      this.updateIn([k], notSetValue, updater);
-  }
-
-  updateIn(keyPath, notSetValue, updater) {
-    if (!updater) {
-      updater = notSetValue;
-      notSetValue = undefined;
+    if (collection.size === 0) {
+      return this;
     }
-    var updatedValue = updateInDeepMap(
-      this,
-      forceIterator(keyPath),
-      notSetValue,
-      updater
-    );
-    return updatedValue === NOT_SET ? undefined : updatedValue;
+
+    return this.withMutations(map => {
+      collection.forEach(key => map.remove(key));
+    });
   }
 
   clear() {
@@ -114,42 +116,6 @@ export class Map extends KeyedCollection {
 
   // @pragma Composition
 
-  merge(/*...iters*/) {
-    return mergeIntoMapWith(this, undefined, arguments);
-  }
-
-  mergeWith(merger, ...iters) {
-    return mergeIntoMapWith(this, merger, iters);
-  }
-
-  mergeIn(keyPath, ...iters) {
-    return this.updateIn(
-      keyPath,
-      emptyMap(),
-      m => typeof m.merge === 'function' ?
-        m.merge.apply(m, iters) :
-        iters[iters.length - 1]
-    );
-  }
-
-  mergeDeep(/*...iters*/) {
-    return mergeIntoMapWith(this, deepMerger, arguments);
-  }
-
-  mergeDeepWith(merger, ...iters) {
-    return mergeIntoMapWith(this, deepMergerWith(merger), iters);
-  }
-
-  mergeDeepIn(keyPath, ...iters) {
-    return this.updateIn(
-      keyPath,
-      emptyMap(),
-      m => typeof m.mergeDeep === 'function' ?
-        m.mergeDeep.apply(m, iters) :
-        iters[iters.length - 1]
-    );
-  }
-
   sort(comparator) {
     // Late binding
     return OrderedMap(sortFactory(this, comparator));
@@ -162,43 +128,31 @@ export class Map extends KeyedCollection {
 
   // @pragma Mutability
 
-  withMutations(fn) {
-    var mutable = this.asMutable();
-    fn(mutable);
-    return mutable.wasAltered() ? mutable.__ensureOwner(this.__ownerID) : this;
-  }
-
-  asMutable() {
-    return this.__ownerID ? this : this.__ensureOwner(new OwnerID());
-  }
-
-  asImmutable() {
-    return this.__ensureOwner();
-  }
-
-  wasAltered() {
-    return this.__altered;
-  }
-
   diffFrom(otherMap) {
-    const added = Map().asMutable()
-    const removed = Map().asMutable()
-    const updated = Map().asMutable()
-    const add = (value, key) => added.set(key, value)
-    const remove = (value, key) => removed.set(key, value)
-    const update = (prevNext, key) => updated.set(key, prevNext)
+    const added = Map().asMutable();
+    const removed = Map().asMutable();
+    const updated = Map().asMutable();
+    const add = (value, key) => added.set(key, value);
+    const remove = (value, key) => removed.set(key, value);
+    const update = (prevNext, key) => updated.set(key, prevNext);
 
-    this.diffFromCallbacks(otherMap, { add, remove, update })
+    this.diffFromCallbacks(otherMap, { add, remove, update });
 
     return {
       added: added.asImmutable(),
       removed: removed.asImmutable(),
       updated: updated.asImmutable(),
-    }
+    };
   }
 
   diffFromCallbacks(otherMap, { add, remove, update }) {
-    processDiffForEquivalentNodes(otherMap._root, this._root, add, remove, update)
+    processDiffForEquivalentNodes(
+      otherMap._root,
+      this._root,
+      add,
+      remove,
+      update
+    );
   }
 
   __iterator(type, reverse) {
@@ -206,11 +160,12 @@ export class Map extends KeyedCollection {
   }
 
   __iterate(fn, reverse) {
-    var iterations = 0;
-    this._root && this._root.iterate(entry => {
-      iterations++;
-      return fn(entry[1], entry[0], this);
-    }, reverse);
+    let iterations = 0;
+    this._root &&
+      this._root.iterate(entry => {
+        iterations++;
+        return fn(entry[1], entry[0], this);
+      }, reverse);
     return iterations;
   }
 
@@ -219,6 +174,9 @@ export class Map extends KeyedCollection {
       return this;
     }
     if (!ownerID) {
+      if (this.size === 0) {
+        return emptyMap();
+      }
       this.__ownerID = ownerID;
       this.__altered = false;
       return this;
@@ -233,26 +191,44 @@ export function isMap(maybeMap) {
 
 Map.isMap = isMap;
 
-var IS_MAP_SENTINEL = '@@__IMMUTABLE_MAP__@@';
+const IS_MAP_SENTINEL = '@@__IMMUTABLE_MAP__@@';
 
-export var MapPrototype = Map.prototype;
+export const MapPrototype = Map.prototype;
 MapPrototype[IS_MAP_SENTINEL] = true;
 MapPrototype[DELETE] = MapPrototype.remove;
-MapPrototype.removeIn = MapPrototype.deleteIn;
-
+MapPrototype.removeAll = MapPrototype.deleteAll;
+MapPrototype.setIn = setIn;
+MapPrototype.removeIn = MapPrototype.deleteIn = deleteIn;
+MapPrototype.update = update;
+MapPrototype.updateIn = updateIn;
+MapPrototype.merge = MapPrototype.concat = merge;
+MapPrototype.mergeWith = mergeWith;
+MapPrototype.mergeDeep = mergeDeep;
+MapPrototype.mergeDeepWith = mergeDeepWith;
+MapPrototype.mergeIn = mergeIn;
+MapPrototype.mergeDeepIn = mergeDeepIn;
+MapPrototype.withMutations = withMutations;
+MapPrototype.wasAltered = wasAltered;
+MapPrototype.asImmutable = asImmutable;
+MapPrototype['@@transducer/init'] = MapPrototype.asMutable = asMutable;
+MapPrototype['@@transducer/step'] = function(result, arr) {
+  return result.set(arr[0], arr[1]);
+};
+MapPrototype['@@transducer/result'] = function(obj) {
+  return obj.asImmutable();
+};
 
 // #pragma Trie Nodes
 
 class ArrayMapNode {
-
   constructor(ownerID, entries) {
     this.ownerID = ownerID;
     this.entries = entries;
   }
 
   get(shift, keyHash, key, notSetValue) {
-    var entries = this.entries;
-    for (var ii = 0, len = entries.length; ii < len; ii++) {
+    const entries = this.entries;
+    for (let ii = 0, len = entries.length; ii < len; ii++) {
       if (is(key, entries[ii][0])) {
         return entries[ii][1];
       }
@@ -261,16 +237,17 @@ class ArrayMapNode {
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    var removed = value === NOT_SET;
+    const removed = value === NOT_SET;
 
-    var entries = this.entries;
-    var idx = 0;
-    for (var len = entries.length; idx < len; idx++) {
+    const entries = this.entries;
+    let idx = 0;
+    const len = entries.length;
+    for (; idx < len; idx++) {
       if (is(key, entries[idx][0])) {
         break;
       }
     }
-    var exists = idx < len;
+    const exists = idx < len;
 
     if (exists ? entries[idx][1] === value : removed) {
       return this;
@@ -287,12 +264,14 @@ class ArrayMapNode {
       return createNodes(ownerID, entries, key, value);
     }
 
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newEntries = isEditable ? entries : arrCopy(entries);
+    const isEditable = ownerID && ownerID === this.ownerID;
+    const newEntries = isEditable ? entries : arrCopy(entries);
 
     if (exists) {
       if (removed) {
-        idx === len - 1 ? newEntries.pop() : (newEntries[idx] = newEntries.pop());
+        idx === len - 1
+          ? newEntries.pop()
+          : (newEntries[idx] = newEntries.pop());
       } else {
         newEntries[idx] = [key, value];
       }
@@ -315,7 +294,6 @@ class ArrayMapNode {
 }
 
 class BitmapIndexedNode {
-
   constructor(ownerID, bitmap, nodes) {
     this.ownerID = ownerID;
     this.bitmap = bitmap;
@@ -326,29 +304,44 @@ class BitmapIndexedNode {
     if (keyHash === undefined) {
       keyHash = hash(key);
     }
-    var bit = (1 << ((shift === 0 ? keyHash : keyHash >>> shift) & MASK));
-    var bitmap = this.bitmap;
-    return (bitmap & bit) === 0 ? notSetValue :
-      this.nodes[popCount(bitmap & (bit - 1))].get(shift + SHIFT, keyHash, key, notSetValue);
+    const bit = 1 << ((shift === 0 ? keyHash : keyHash >>> shift) & MASK);
+    const bitmap = this.bitmap;
+    return (bitmap & bit) === 0
+      ? notSetValue
+      : this.nodes[popCount(bitmap & (bit - 1))].get(
+          shift + SHIFT,
+          keyHash,
+          key,
+          notSetValue
+        );
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
     if (keyHash === undefined) {
       keyHash = hash(key);
     }
-    var keyHashFrag = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
-    var bit = 1 << keyHashFrag;
-    var bitmap = this.bitmap;
-    var exists = (bitmap & bit) !== 0;
+    const keyHashFrag = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+    const bit = 1 << keyHashFrag;
+    const bitmap = this.bitmap;
+    const exists = (bitmap & bit) !== 0;
 
     if (!exists && value === NOT_SET) {
       return this;
     }
 
-    var idx = popCount(bitmap & (bit - 1));
-    var nodes = this.nodes;
-    var node = exists ? nodes[idx] : undefined;
-    var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
+    const idx = popCount(bitmap & (bit - 1));
+    const nodes = this.nodes;
+    const node = exists ? nodes[idx] : undefined;
+    const newNode = updateNode(
+      node,
+      ownerID,
+      shift + SHIFT,
+      keyHash,
+      key,
+      value,
+      didChangeSize,
+      didAlter
+    );
 
     if (newNode === node) {
       return this;
@@ -358,7 +351,12 @@ class BitmapIndexedNode {
       return expandNodes(ownerID, nodes, bitmap, keyHashFrag, newNode);
     }
 
-    if (exists && !newNode && nodes.length === 2 && isLeafNode(nodes[idx ^ 1])) {
+    if (
+      exists &&
+      !newNode &&
+      nodes.length === 2 &&
+      isLeafNode(nodes[idx ^ 1])
+    ) {
       return nodes[idx ^ 1];
     }
 
@@ -366,12 +364,13 @@ class BitmapIndexedNode {
       return newNode;
     }
 
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newBitmap = exists ? newNode ? bitmap : bitmap ^ bit : bitmap | bit;
-    var newNodes = exists ? newNode ?
-      setIn(nodes, idx, newNode, isEditable) :
-      spliceOut(nodes, idx, isEditable) :
-      spliceIn(nodes, idx, newNode, isEditable);
+    const isEditable = ownerID && ownerID === this.ownerID;
+    const newBitmap = exists ? (newNode ? bitmap : bitmap ^ bit) : bitmap | bit;
+    const newNodes = exists
+      ? newNode
+        ? setAt(nodes, idx, newNode, isEditable)
+        : spliceOut(nodes, idx, isEditable)
+      : spliceIn(nodes, idx, newNode, isEditable);
 
     if (isEditable) {
       this.bitmap = newBitmap;
@@ -383,30 +382,31 @@ class BitmapIndexedNode {
   }
 
   getHashRanges() {
-    let bitmap = this.bitmap
-    const hashRanges = []
-    let hash = 0
-    let position = 0
+    let bitmap = this.bitmap;
+    const hashRanges = [];
+    let hash = 0;
+    let position = 0;
     while (bitmap !== 0) {
-      if (bitmap & 1 === 1) {
-        const subNode = this.nodes[position]
-        hashRanges.push({ hash, node: subNode })
-        position += 1
+      if (bitmap & (1 === 1)) {
+        const subNode = this.nodes[position];
+        hashRanges.push({ hash, node: subNode });
+        position += 1;
       }
-      bitmap = bitmap >>> 1
-      hash++
+      bitmap >>>= 1;
+      hash++;
     }
-    return hashRanges
+    return hashRanges;
   }
 
   collectAllEntries(collectingArray) {
-    this.nodes.forEach(node => (!!node) && node.collectAllEntries(collectingArray));
+    this.nodes.forEach(
+      node => !!node && node.collectAllEntries(collectingArray)
+    );
     return collectingArray;
   }
 }
 
 class HashArrayMapNode {
-
   constructor(ownerID, count, nodes) {
     this.ownerID = ownerID;
     this.count = count;
@@ -417,30 +417,41 @@ class HashArrayMapNode {
     if (keyHash === undefined) {
       keyHash = hash(key);
     }
-    var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
-    var node = this.nodes[idx];
-    return node ? node.get(shift + SHIFT, keyHash, key, notSetValue) : notSetValue;
+    const idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+    const node = this.nodes[idx];
+    return node
+      ? node.get(shift + SHIFT, keyHash, key, notSetValue)
+      : notSetValue;
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
     if (keyHash === undefined) {
       keyHash = hash(key);
     }
-    var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
-    var removed = value === NOT_SET;
-    var nodes = this.nodes;
-    var node = nodes[idx];
+    const idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+    const removed = value === NOT_SET;
+    const nodes = this.nodes;
+    const node = nodes[idx];
 
     if (removed && !node) {
       return this;
     }
 
-    var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
+    const newNode = updateNode(
+      node,
+      ownerID,
+      shift + SHIFT,
+      keyHash,
+      key,
+      value,
+      didChangeSize,
+      didAlter
+    );
     if (newNode === node) {
       return this;
     }
 
-    var newCount = this.count;
+    let newCount = this.count;
     if (!node) {
       newCount++;
     } else if (!newNode) {
@@ -450,8 +461,8 @@ class HashArrayMapNode {
       }
     }
 
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newNodes = setIn(nodes, idx, newNode, isEditable);
+    const isEditable = ownerID && ownerID === this.ownerID;
+    const newNodes = setAt(nodes, idx, newNode, isEditable);
 
     if (isEditable) {
       this.count = newCount;
@@ -465,17 +476,18 @@ class HashArrayMapNode {
   getHashRanges() {
     return this.nodes
       .map((node, i) => ({ hash: i, node }))
-      .filter(({ node }) => !!node)
+      .filter(({ node }) => !!node);
   }
 
   collectAllEntries(collectingArray) {
-    this.nodes.forEach(node => (!!node) && node.collectAllEntries(collectingArray));
+    this.nodes.forEach(
+      node => !!node && node.collectAllEntries(collectingArray)
+    );
     return collectingArray;
   }
 }
 
 class HashCollisionNode {
-
   constructor(ownerID, keyHash, entries) {
     this.ownerID = ownerID;
     this.keyHash = keyHash;
@@ -483,8 +495,8 @@ class HashCollisionNode {
   }
 
   get(shift, keyHash, key, notSetValue) {
-    var entries = this.entries;
-    for (var ii = 0, len = entries.length; ii < len; ii++) {
+    const entries = this.entries;
+    for (let ii = 0, len = entries.length; ii < len; ii++) {
       if (is(key, entries[ii][0])) {
         return entries[ii][1];
       }
@@ -497,7 +509,7 @@ class HashCollisionNode {
       keyHash = hash(key);
     }
 
-    var removed = value === NOT_SET;
+    const removed = value === NOT_SET;
 
     if (keyHash !== this.keyHash) {
       if (removed) {
@@ -508,14 +520,15 @@ class HashCollisionNode {
       return mergeIntoNode(this, ownerID, shift, keyHash, [key, value]);
     }
 
-    var entries = this.entries;
-    var idx = 0;
-    for (var len = entries.length; idx < len; idx++) {
+    const entries = this.entries;
+    let idx = 0;
+    const len = entries.length;
+    for (; idx < len; idx++) {
       if (is(key, entries[idx][0])) {
         break;
       }
     }
-    var exists = idx < len;
+    const exists = idx < len;
 
     if (exists ? entries[idx][1] === value : removed) {
       return this;
@@ -528,12 +541,14 @@ class HashCollisionNode {
       return new ValueNode(ownerID, this.keyHash, entries[idx ^ 1]);
     }
 
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newEntries = isEditable ? entries : arrCopy(entries);
+    const isEditable = ownerID && ownerID === this.ownerID;
+    const newEntries = isEditable ? entries : arrCopy(entries);
 
     if (exists) {
       if (removed) {
-        idx === len - 1 ? newEntries.pop() : (newEntries[idx] = newEntries.pop());
+        idx === len - 1
+          ? newEntries.pop()
+          : (newEntries[idx] = newEntries.pop());
       } else {
         newEntries[idx] = [key, value];
       }
@@ -556,7 +571,6 @@ class HashCollisionNode {
 }
 
 class ValueNode {
-
   constructor(ownerID, keyHash, entry) {
     this.ownerID = ownerID;
     this.keyHash = keyHash;
@@ -568,8 +582,8 @@ class ValueNode {
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    var removed = value === NOT_SET;
-    var keyMatch = is(key, this.entry[0]);
+    const removed = value === NOT_SET;
+    const keyMatch = is(key, this.entry[0]);
     if (keyMatch ? value === this.entry[1] : removed) {
       return this;
     }
@@ -599,36 +613,39 @@ class ValueNode {
   }
 }
 
-
 // #pragma Iterators
 
-ArrayMapNode.prototype.iterate =
-HashCollisionNode.prototype.iterate = function (fn, reverse) {
-  var entries = this.entries;
-  for (var ii = 0, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+ArrayMapNode.prototype.iterate = HashCollisionNode.prototype.iterate = function(
+  fn,
+  reverse
+) {
+  const entries = this.entries;
+  for (let ii = 0, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
     if (fn(entries[reverse ? maxIndex - ii : ii]) === false) {
       return false;
     }
   }
-}
+};
 
-BitmapIndexedNode.prototype.iterate =
-HashArrayMapNode.prototype.iterate = function (fn, reverse) {
-  var nodes = this.nodes;
-  for (var ii = 0, maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
-    var node = nodes[reverse ? maxIndex - ii : ii];
+BitmapIndexedNode.prototype.iterate = HashArrayMapNode.prototype.iterate = function(
+  fn,
+  reverse
+) {
+  const nodes = this.nodes;
+  for (let ii = 0, maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
+    const node = nodes[reverse ? maxIndex - ii : ii];
     if (node && node.iterate(fn, reverse) === false) {
       return false;
     }
   }
-}
+};
 
-ValueNode.prototype.iterate = function (fn, reverse) {
+// eslint-disable-next-line no-unused-vars
+ValueNode.prototype.iterate = function(fn, reverse) {
   return fn(this.entry);
-}
+};
 
 class MapIterator extends Iterator {
-
   constructor(map, type, reverse) {
     this._type = type;
     this._reverse = reverse;
@@ -636,12 +653,12 @@ class MapIterator extends Iterator {
   }
 
   next() {
-    var type = this._type;
-    var stack = this._stack;
+    const type = this._type;
+    let stack = this._stack;
     while (stack) {
-      var node = stack.node;
-      var index = stack.index++;
-      var maxIndex;
+      const node = stack.node;
+      const index = stack.index++;
+      let maxIndex;
       if (node.entry) {
         if (index === 0) {
           return mapIteratorValue(type, node.entry);
@@ -649,12 +666,15 @@ class MapIterator extends Iterator {
       } else if (node.entries) {
         maxIndex = node.entries.length - 1;
         if (index <= maxIndex) {
-          return mapIteratorValue(type, node.entries[this._reverse ? maxIndex - index : index]);
+          return mapIteratorValue(
+            type,
+            node.entries[this._reverse ? maxIndex - index : index]
+          );
         }
       } else {
         maxIndex = node.nodes.length - 1;
         if (index <= maxIndex) {
-          var subNode = node.nodes[this._reverse ? maxIndex - index : index];
+          const subNode = node.nodes[this._reverse ? maxIndex - index : index];
           if (subNode) {
             if (subNode.entry) {
               return mapIteratorValue(type, subNode.entry);
@@ -678,12 +698,12 @@ function mapIteratorFrame(node, prev) {
   return {
     node: node,
     index: 0,
-    __prev: prev
+    __prev: prev,
   };
 }
 
 function makeMap(size, root, ownerID, hash) {
-  var map = Object.create(MapPrototype);
+  const map = Object.create(MapPrototype);
   map.size = size;
   map._root = root;
   map.__ownerID = ownerID;
@@ -692,14 +712,14 @@ function makeMap(size, root, ownerID, hash) {
   return map;
 }
 
-var EMPTY_MAP;
+let EMPTY_MAP;
 export function emptyMap() {
   return EMPTY_MAP || (EMPTY_MAP = makeMap(0));
 }
 
 function updateMap(map, k, v) {
-  var newRoot;
-  var newSize;
+  let newRoot;
+  let newSize;
   if (!map._root) {
     if (v === NOT_SET) {
       return map;
@@ -707,13 +727,22 @@ function updateMap(map, k, v) {
     newSize = 1;
     newRoot = new ArrayMapNode(map.__ownerID, [[k, v]]);
   } else {
-    var didChangeSize = MakeRef(CHANGE_LENGTH);
-    var didAlter = MakeRef(DID_ALTER);
-    newRoot = updateNode(map._root, map.__ownerID, 0, undefined, k, v, didChangeSize, didAlter);
+    const didChangeSize = MakeRef(CHANGE_LENGTH);
+    const didAlter = MakeRef(DID_ALTER);
+    newRoot = updateNode(
+      map._root,
+      map.__ownerID,
+      0,
+      undefined,
+      k,
+      v,
+      didChangeSize,
+      didAlter
+    );
     if (!didAlter.value) {
       return map;
     }
-    newSize = map.size + (didChangeSize.value ? v === NOT_SET ? -1 : 1 : 0);
+    newSize = map.size + (didChangeSize.value ? (v === NOT_SET ? -1 : 1) : 0);
   }
   if (map.__ownerID) {
     map.size = newSize;
@@ -725,7 +754,16 @@ function updateMap(map, k, v) {
   return newRoot ? makeMap(newSize, newRoot) : emptyMap();
 }
 
-function updateNode(node, ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+function updateNode(
+  node,
+  ownerID,
+  shift,
+  keyHash,
+  key,
+  value,
+  didChangeSize,
+  didAlter
+) {
   if (!node) {
     if (value === NOT_SET) {
       return node;
@@ -734,11 +772,21 @@ function updateNode(node, ownerID, shift, keyHash, key, value, didChangeSize, di
     SetRef(didChangeSize);
     return new ValueNode(ownerID, keyHash, [key, value]);
   }
-  return node.update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter);
+  return node.update(
+    ownerID,
+    shift,
+    keyHash,
+    key,
+    value,
+    didChangeSize,
+    didAlter
+  );
 }
 
 function isLeafNode(node) {
-  return node.constructor === ValueNode || node.constructor === HashCollisionNode;
+  return (
+    node.constructor === ValueNode || node.constructor === HashCollisionNode
+  );
 }
 
 function mergeIntoNode(node, ownerID, shift, keyHash, entry) {
@@ -746,13 +794,15 @@ function mergeIntoNode(node, ownerID, shift, keyHash, entry) {
     return new HashCollisionNode(ownerID, keyHash, [node.entry, entry]);
   }
 
-  var idx1 = (shift === 0 ? node.keyHash : node.keyHash >>> shift) & MASK;
-  var idx2 = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+  const idx1 = (shift === 0 ? node.keyHash : node.keyHash >>> shift) & MASK;
+  const idx2 = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
 
-  var newNode;
-  var nodes = idx1 === idx2 ?
-    [mergeIntoNode(node, ownerID, shift + SHIFT, keyHash, entry)] :
-    ((newNode = new ValueNode(ownerID, keyHash, entry)), idx1 < idx2 ? [node, newNode] : [newNode, node]);
+  let newNode;
+  const nodes =
+    idx1 === idx2
+      ? [mergeIntoNode(node, ownerID, shift + SHIFT, keyHash, entry)]
+      : ((newNode = new ValueNode(ownerID, keyHash, entry)),
+        idx1 < idx2 ? [node, newNode] : [newNode, node]);
 
   return new BitmapIndexedNode(ownerID, (1 << idx1) | (1 << idx2), nodes);
 }
@@ -761,20 +811,20 @@ function createNodes(ownerID, entries, key, value) {
   if (!ownerID) {
     ownerID = new OwnerID();
   }
-  var node = new ValueNode(ownerID, hash(key), [key, value]);
-  for (var ii = 0; ii < entries.length; ii++) {
-    var entry = entries[ii];
+  let node = new ValueNode(ownerID, hash(key), [key, value]);
+  for (let ii = 0; ii < entries.length; ii++) {
+    const entry = entries[ii];
     node = node.update(ownerID, 0, undefined, entry[0], entry[1]);
   }
   return node;
 }
 
 function packNodes(ownerID, nodes, count, excluding) {
-  var bitmap = 0;
-  var packedII = 0;
-  var packedNodes = new Array(count);
-  for (var ii = 0, bit = 1, len = nodes.length; ii < len; ii++, bit <<= 1) {
-    var node = nodes[ii];
+  let bitmap = 0;
+  let packedII = 0;
+  const packedNodes = new Array(count);
+  for (let ii = 0, bit = 1, len = nodes.length; ii < len; ii++, bit <<= 1) {
+    const node = nodes[ii];
     if (node !== undefined && ii !== excluding) {
       bitmap |= bit;
       packedNodes[packedII++] = node;
@@ -784,117 +834,39 @@ function packNodes(ownerID, nodes, count, excluding) {
 }
 
 function expandNodes(ownerID, nodes, bitmap, including, node) {
-  var count = 0;
-  var expandedNodes = new Array(SIZE);
-  for (var ii = 0; bitmap !== 0; ii++, bitmap >>>= 1) {
+  let count = 0;
+  const expandedNodes = new Array(SIZE);
+  for (let ii = 0; bitmap !== 0; ii++, bitmap >>>= 1) {
     expandedNodes[ii] = bitmap & 1 ? nodes[count++] : undefined;
   }
   expandedNodes[including] = node;
   return new HashArrayMapNode(ownerID, count + 1, expandedNodes);
 }
 
-function mergeIntoMapWith(map, merger, iterables) {
-  var iters = [];
-  for (var ii = 0; ii < iterables.length; ii++) {
-    var value = iterables[ii];
-    var iter = KeyedIterable(value);
-    if (!isIterable(value)) {
-      iter = iter.map(v => fromJS(v));
-    }
-    iters.push(iter);
-  }
-  return mergeIntoCollectionWith(map, merger, iters);
-}
-
-export function deepMerger(existing, value, key) {
-  return existing && existing.mergeDeep && isIterable(value) ?
-    existing.mergeDeep(value) :
-    is(existing, value) ? existing : value;
-}
-
-export function deepMergerWith(merger) {
-  return (existing, value, key) => {
-    if (existing && existing.mergeDeepWith && isIterable(value)) {
-      return existing.mergeDeepWith(merger, value);
-    }
-    var nextValue = merger(existing, value, key);
-    return is(existing, nextValue) ? existing : nextValue;
-  };
-}
-
-export function mergeIntoCollectionWith(collection, merger, iters) {
-  iters = iters.filter(x => x.size !== 0);
-  if (iters.length === 0) {
-    return collection;
-  }
-  if (collection.size === 0 && !collection.__ownerID && iters.length === 1) {
-    return collection.constructor(iters[0]);
-  }
-  return collection.withMutations(collection => {
-    var mergeIntoMap = merger ?
-      (value, key) => {
-        collection.update(key, NOT_SET, existing =>
-          existing === NOT_SET ? value : merger(existing, value, key)
-        );
-      } :
-      (value, key) => {
-        collection.set(key, value);
-      }
-    for (var ii = 0; ii < iters.length; ii++) {
-      iters[ii].forEach(mergeIntoMap);
-    }
-  });
-}
-
-function updateInDeepMap(existing, keyPathIter, notSetValue, updater) {
-  var isNotSet = existing === NOT_SET;
-  var step = keyPathIter.next();
-  if (step.done) {
-    var existingValue = isNotSet ? notSetValue : existing;
-    var newValue = updater(existingValue);
-    return newValue === existingValue ? existing : newValue;
-  }
-  invariant(
-    isNotSet || (existing && existing.set),
-    'invalid keyPath'
-  );
-  var key = step.value;
-  var nextExisting = isNotSet ? NOT_SET : existing.get(key, NOT_SET);
-  var nextUpdated = updateInDeepMap(
-    nextExisting,
-    keyPathIter,
-    notSetValue,
-    updater
-  );
-  return nextUpdated === nextExisting ? existing :
-    nextUpdated === NOT_SET ? existing.remove(key) :
-    (isNotSet ? emptyMap() : existing).set(key, nextUpdated);
-}
-
 function popCount(x) {
-  x = x - ((x >> 1) & 0x55555555);
+  x -= (x >> 1) & 0x55555555;
   x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
   x = (x + (x >> 4)) & 0x0f0f0f0f;
-  x = x + (x >> 8);
-  x = x + (x >> 16);
+  x += x >> 8;
+  x += x >> 16;
   return x & 0x7f;
 }
 
-function setIn(array, idx, val, canEdit) {
-  var newArray = canEdit ? array : arrCopy(array);
+function setAt(array, idx, val, canEdit) {
+  const newArray = canEdit ? array : arrCopy(array);
   newArray[idx] = val;
   return newArray;
 }
 
 function spliceIn(array, idx, val, canEdit) {
-  var newLen = array.length + 1;
+  const newLen = array.length + 1;
   if (canEdit && idx + 1 === newLen) {
     array[idx] = val;
     return array;
   }
-  var newArray = new Array(newLen);
-  var after = 0;
-  for (var ii = 0; ii < newLen; ii++) {
+  const newArray = new Array(newLen);
+  let after = 0;
+  for (let ii = 0; ii < newLen; ii++) {
     if (ii === idx) {
       newArray[ii] = val;
       after = -1;
@@ -906,14 +878,14 @@ function spliceIn(array, idx, val, canEdit) {
 }
 
 function spliceOut(array, idx, canEdit) {
-  var newLen = array.length - 1;
+  const newLen = array.length - 1;
   if (canEdit && idx === newLen) {
     array.pop();
     return array;
   }
-  var newArray = new Array(newLen);
-  var after = 0;
-  for (var ii = 0; ii < newLen; ii++) {
+  const newArray = new Array(newLen);
+  let after = 0;
+  for (let ii = 0; ii < newLen; ii++) {
     if (ii === idx) {
       after = 1;
     }
@@ -922,96 +894,96 @@ function spliceOut(array, idx, canEdit) {
   return newArray;
 }
 
-var MAX_ARRAY_MAP_SIZE = SIZE / 4;
-var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
-var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
+const MAX_ARRAY_MAP_SIZE = SIZE / 4;
+const MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
+const MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
 function processAllEntries(node1, node2, add, remove, update) {
-  if(!node1) {
+  if (!node1) {
     node2.collectAllEntries([]).forEach(([key, value]) => {
-      add(value,key)
-    })
-    return
+      add(value, key);
+    });
+    return;
   }
 
-  if(!node2) {
+  if (!node2) {
     node1.collectAllEntries([]).forEach(([key, value]) => {
-      remove(value,key)
-    })
-    return
+      remove(value, key);
+    });
+    return;
   }
 
-  const allEntries1 = node1.collectAllEntries([])
-  const allEntries2 = node2.collectAllEntries([])
+  const allEntries1 = node1.collectAllEntries([]);
+  const allEntries2 = node2.collectAllEntries([]);
 
-  const keyToValue1 = {}
-  const keyToValue2 = {}
+  const keyToValue1 = {};
+  const keyToValue2 = {};
 
   allEntries1.forEach(([key, value]) => {
-    keyToValue1[key] = value
-  })
+    keyToValue1[key] = value;
+  });
 
   allEntries2.forEach(([key, value]) => {
-    keyToValue2[key] = value
-  })
+    keyToValue2[key] = value;
+  });
 
   allEntries2.forEach(([key, value]) => {
-    const prev = keyToValue1[key]
+    const prev = keyToValue1[key];
     if (prev === undefined) {
-      add(value,key)
+      add(value, key);
     } else if (prev !== value) {
-      update({ prev, next: value }, key)
+      update({ prev, next: value }, key);
     }
-  })
+  });
 
   allEntries1.forEach(([key, value]) => {
     if (keyToValue2[key] === undefined) {
-      remove(value, key)
+      remove(value, key);
     }
-  })
+  });
 }
 
 function processDiffForEquivalentNodes(node1, node2, add, remove, update) {
   if (node1 === node2) {
     // The equivalent nodes in boths tries are the same node — no need to diff further
-    return
+    return;
   }
 
-  const hashRanges1 = (node1 && node1.getHashRanges) ?
-    node1.getHashRanges() : undefined;
-  const hashRanges2 = (node2 && node2.getHashRanges) ?
-    node2.getHashRanges() : undefined;
+  const hashRanges1 =
+    node1 && node1.getHashRanges ? node1.getHashRanges() : undefined;
+  const hashRanges2 =
+    node2 && node2.getHashRanges ? node2.getHashRanges() : undefined;
 
   if (!hashRanges1 || !hashRanges2) {
-    return processAllEntries(node1, node2, add, remove, update)
+    return processAllEntries(node1, node2, add, remove, update);
   }
 
   // Double pointer walk
-  let hashIndex1 = 0
-  let hashIndex2 = 0
+  let hashIndex1 = 0;
+  let hashIndex2 = 0;
   while (hashIndex1 < hashRanges1.length && hashIndex2 < hashRanges2.length) {
-    const { node: subNode1, hash: hash1 } = hashRanges1[hashIndex1]
-    const { node: subNode2, hash: hash2 } = hashRanges2[hashIndex2]
+    const { node: subNode1, hash: hash1 } = hashRanges1[hashIndex1];
+    const { node: subNode2, hash: hash2 } = hashRanges2[hashIndex2];
     if (hash1 < hash2) {
-      processAllEntries(subNode1, undefined, add, remove, update)
-      hashIndex1 += 1
+      processAllEntries(subNode1, undefined, add, remove, update);
+      hashIndex1 += 1;
     } else if (hash2 < hash1) {
-      processAllEntries(undefined, subNode2, add, remove, update)
-      hashIndex2 += 1
+      processAllEntries(undefined, subNode2, add, remove, update);
+      hashIndex2 += 1;
     } else {
-      processDiffForEquivalentNodes(subNode1, subNode2, add, remove, update)
-      hashIndex1 += 1
-      hashIndex2 += 1
+      processDiffForEquivalentNodes(subNode1, subNode2, add, remove, update);
+      hashIndex1 += 1;
+      hashIndex2 += 1;
     }
   }
   while (hashIndex1 < hashRanges1.length) {
-    const { node: subNode1 } = hashRanges1[hashIndex1]
-    processAllEntries(subNode1, undefined, add, remove, update)
-    hashIndex1 += 1
+    const { node: subNode1 } = hashRanges1[hashIndex1];
+    processAllEntries(subNode1, undefined, add, remove, update);
+    hashIndex1 += 1;
   }
   while (hashIndex2 < hashRanges2.length) {
-    const { node: subNode2 } = hashRanges2[hashIndex2]
-    processAllEntries(undefined, subNode2, add, remove, update)
-    hashIndex2 += 1
+    const { node: subNode2 } = hashRanges2[hashIndex2];
+    processAllEntries(undefined, subNode2, add, remove, update);
+    hashIndex2 += 1;
   }
 }

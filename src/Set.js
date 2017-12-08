@@ -1,34 +1,35 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
-import { SetIterable, KeyedIterable, isOrdered } from './Iterable'
-import { SetCollection } from './Collection'
-import { emptyMap, MapPrototype } from './Map'
-import { DELETE } from './TrieUtils'
-import { sortFactory } from './Operations'
-import assertNotInfinite from './utils/assertNotInfinite'
+import { Collection, SetCollection, KeyedCollection } from './Collection';
+import { isOrdered } from './Predicates';
+import { emptyMap } from './Map';
+import { DELETE } from './TrieUtils';
+import { sortFactory } from './Operations';
+import assertNotInfinite from './utils/assertNotInfinite';
+import { asImmutable } from './methods/asImmutable';
+import { asMutable } from './methods/asMutable';
+import { withMutations } from './methods/withMutations';
 
-import { OrderedSet } from './OrderedSet'
-
+import { OrderedSet } from './OrderedSet';
 
 export class Set extends SetCollection {
-
   // @pragma Construction
 
   constructor(value) {
-    return value === null || value === undefined ? emptySet() :
-      isSet(value) && !isOrdered(value) ? value :
-      emptySet().withMutations(set => {
-        var iter = SetIterable(value);
-        assertNotInfinite(iter.size);
-        iter.forEach(v => set.add(v));
-      });
+    return value === null || value === undefined
+      ? emptySet()
+      : isSet(value) && !isOrdered(value)
+        ? value
+        : emptySet().withMutations(set => {
+            const iter = SetCollection(value);
+            assertNotInfinite(iter.size);
+            iter.forEach(v => set.add(v));
+          });
   }
 
   static of(/*...values*/) {
@@ -36,7 +37,21 @@ export class Set extends SetCollection {
   }
 
   static fromKeys(value) {
-    return this(KeyedIterable(value).keySeq());
+    return this(KeyedCollection(value).keySeq());
+  }
+
+  static intersect(sets) {
+    sets = Collection(sets).toArray();
+    return sets.length
+      ? SetPrototype.intersect.apply(Set(sets.pop()), sets)
+      : emptySet();
+  }
+
+  static union(sets) {
+    sets = Collection(sets).toArray();
+    return sets.length
+      ? SetPrototype.union.apply(Set(sets.pop()), sets)
+      : emptySet();
   }
 
   toString() {
@@ -52,7 +67,7 @@ export class Set extends SetCollection {
   // @pragma Modification
 
   add(value) {
-    return updateSet(this, this._map.set(value, true));
+    return updateSet(this, this._map.set(value, value));
   }
 
   remove(value) {
@@ -74,8 +89,8 @@ export class Set extends SetCollection {
       return this.constructor(iters[0]);
     }
     return this.withMutations(set => {
-      for (var ii = 0; ii < iters.length; ii++) {
-        SetIterable(iters[ii]).forEach(value => set.add(value));
+      for (let ii = 0; ii < iters.length; ii++) {
+        SetCollection(iters[ii]).forEach(value => set.add(value));
       }
     });
   }
@@ -84,13 +99,16 @@ export class Set extends SetCollection {
     if (iters.length === 0) {
       return this;
     }
-    iters = iters.map(iter => SetIterable(iter));
-    var originalSet = this;
+    iters = iters.map(iter => SetCollection(iter));
+    const toRemove = [];
+    this.forEach(value => {
+      if (!iters.every(iter => iter.includes(value))) {
+        toRemove.push(value);
+      }
+    });
     return this.withMutations(set => {
-      originalSet.forEach(value => {
-        if (!iters.every(iter => iter.includes(value))) {
-          set.remove(value);
-        }
+      toRemove.forEach(value => {
+        set.remove(value);
       });
     });
   }
@@ -99,23 +117,18 @@ export class Set extends SetCollection {
     if (iters.length === 0) {
       return this;
     }
-    iters = iters.map(iter => SetIterable(iter));
-    var originalSet = this;
+    iters = iters.map(iter => SetCollection(iter));
+    const toRemove = [];
+    this.forEach(value => {
+      if (iters.some(iter => iter.includes(value))) {
+        toRemove.push(value);
+      }
+    });
     return this.withMutations(set => {
-      originalSet.forEach(value => {
-        if (iters.some(iter => iter.includes(value))) {
-          set.remove(value);
-        }
+      toRemove.forEach(value => {
+        set.remove(value);
       });
     });
-  }
-
-  merge() {
-    return this.union.apply(this, arguments);
-  }
-
-  mergeWith(merger, ...iters) {
-    return this.union.apply(this, iters);
   }
 
   sort(comparator) {
@@ -133,39 +146,38 @@ export class Set extends SetCollection {
   }
 
   diffFrom(otherSet) {
-    const { added, removed } = this._map.diffFrom(otherSet._map)
+    const { added, removed } = this._map.diffFrom(otherSet._map);
 
     return {
       added: added.keySeq().toSet(),
       removed: removed.keySeq().toSet(),
-    }
+    };
   }
 
   diffFromCallbacks(otherSet, { add, remove }) {
-    this._map.diffFromCallbacks(
-      otherSet._map, 
-      { 
-        add: (value, key) => add(key),
-        remove: (value, key) => remove(key),
-      }
-    )
+    this._map.diffFromCallbacks(otherSet._map, {
+      add: (value, key) => add(key),
+      remove: (value, key) => remove(key),
+    });
   }
 
-
   __iterate(fn, reverse) {
-    return this._map.__iterate((_, k) => fn(k, k, this), reverse);
+    return this._map.__iterate(k => fn(k, k, this), reverse);
   }
 
   __iterator(type, reverse) {
-    return this._map.map((_, k) => k).__iterator(type, reverse);
+    return this._map.__iterator(type, reverse);
   }
 
   __ensureOwner(ownerID) {
     if (ownerID === this.__ownerID) {
       return this;
     }
-    var newMap = this._map.__ensureOwner(ownerID);
+    const newMap = this._map.__ensureOwner(ownerID);
     if (!ownerID) {
+      if (this.size === 0) {
+        return this.__empty();
+      }
       this.__ownerID = ownerID;
       this._map = newMap;
       return this;
@@ -180,16 +192,21 @@ export function isSet(maybeSet) {
 
 Set.isSet = isSet;
 
-var IS_SET_SENTINEL = '@@__IMMUTABLE_SET__@@';
+const IS_SET_SENTINEL = '@@__IMMUTABLE_SET__@@';
 
-var SetPrototype = Set.prototype;
+const SetPrototype = Set.prototype;
 SetPrototype[IS_SET_SENTINEL] = true;
 SetPrototype[DELETE] = SetPrototype.remove;
-SetPrototype.mergeDeep = SetPrototype.merge;
-SetPrototype.mergeDeepWith = SetPrototype.mergeWith;
-SetPrototype.withMutations = MapPrototype.withMutations;
-SetPrototype.asMutable = MapPrototype.asMutable;
-SetPrototype.asImmutable = MapPrototype.asImmutable;
+SetPrototype.merge = SetPrototype.concat = SetPrototype.union;
+SetPrototype.withMutations = withMutations;
+SetPrototype.asImmutable = asImmutable;
+SetPrototype['@@transducer/init'] = SetPrototype.asMutable = asMutable;
+SetPrototype['@@transducer/step'] = function(result, arr) {
+  return result.add(arr);
+};
+SetPrototype['@@transducer/result'] = function(obj) {
+  return obj.asImmutable();
+};
 
 SetPrototype.__empty = emptySet;
 SetPrototype.__make = makeSet;
@@ -200,20 +217,20 @@ function updateSet(set, newMap) {
     set._map = newMap;
     return set;
   }
-  return newMap === set._map ? set :
-    newMap.size === 0 ? set.__empty() :
-    set.__make(newMap);
+  return newMap === set._map
+    ? set
+    : newMap.size === 0 ? set.__empty() : set.__make(newMap);
 }
 
 function makeSet(map, ownerID) {
-  var set = Object.create(SetPrototype);
+  const set = Object.create(SetPrototype);
   set.size = map ? map.size : 0;
   set._map = map;
   set.__ownerID = ownerID;
   return set;
 }
 
-var EMPTY_SET;
+let EMPTY_SET;
 function emptySet() {
   return EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
 }

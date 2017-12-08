@@ -1,15 +1,24 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 .github-btn {
   margin-top: -10%;
+  display: flex;
+  flex-direction: row;
 }
 
-.gh-btn,
-.gh-count,
 .gh-ico {
   float: left;
 }
 
 .gh-btn,
 .gh-count {
+  border: 1px solid #bababa;
+  border-bottom-color: #a6a6a6;
   border-radius: 6px;
   color: #212121;
   cursor: pointer;
@@ -24,8 +33,6 @@
 
 .gh-btn {
   .gradient(#fafafa, #eaeaea);
-  border-bottom-color: #bcbcbc;
-  border: 1px solid #d4d4d4;
 }
 
 .gh-btn:hover,
@@ -67,11 +74,8 @@
 
 .gh-count {
   background-color: #fafafa;
-  border: 1px solid #d4d4d4;
   display: block !important;
   display: none;
-  margin-left: 10px;
-  position: relative;
 }
 
 .gh-count:hover,
@@ -79,15 +83,21 @@
   color: #4183C4;
 }
 
-.gh-count:before,
-.gh-count:after {
+.gh-triangle {
+    position: relative;
+    margin-left: 11px;
+    margin-right: -1px;
+}
+
+.gh-triangle:before,
+.gh-triangle:after {
   border-color: transparent;
   border-style: solid;
   content: '';
   position: absolute;
 }
 
-.gh-count:before{
+.gh-triangle:before{
   border-right-color: #fafafa;
   border-width: 8px 8px 8px 0;
   left: -7px;
@@ -95,8 +105,8 @@
   top: 50%;
 }
 
-.gh-count:after{
-  border-right-color: #d4d4d4;
+.gh-triangle:after{
+  border-right-color: #bababa;
   border-width: 9px 9px 9px 0;
   left: -8px;
   margin-top: -9px;

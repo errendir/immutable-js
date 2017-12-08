@@ -1,23 +1,28 @@
-///<reference path='../resources/jest.d.ts'/>
-///<reference path='../dist/immutable.d.ts'/>
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
-import { Iterable, Seq } from 'immutable';
+///<reference path='../resources/jest.d.ts'/>
+
+import { isCollection, isIndexed, Seq } from '../';
 
 describe('Seq', () => {
-
   it('can be empty', () => {
     expect(Seq().size).toBe(0);
   });
 
   it('accepts an array', () => {
-    expect(Seq([1,2,3]).size).toBe(3);
+    expect(Seq([1, 2, 3]).size).toBe(3);
   });
 
   it('accepts an object', () => {
-    expect(Seq({a:1,b:2,c:3}).size).toBe(3);
+    expect(Seq({ a: 1, b: 2, c: 3 }).size).toBe(3);
   });
 
-  it('accepts an iterable string', () => {
+  it('accepts a collection string', () => {
     expect(Seq('foo').size).toBe(3);
   });
 
@@ -29,58 +34,63 @@ describe('Seq', () => {
     expect(Seq(new Foo()).size).toBe(2);
   });
 
-  it('of accepts varargs', () => {
-    expect(Seq.of(1,2,3).size).toBe(3);
-  });
-
   it('accepts another sequence', () => {
-    var seq = Seq.of(1,2,3);
+    const seq = Seq([1, 2, 3]);
     expect(Seq(seq).size).toBe(3);
   });
 
   it('accepts a string', () => {
-    var seq = Seq('abc');
+    const seq = Seq('abc');
     expect(seq.size).toBe(3);
     expect(seq.get(1)).toBe('b');
     expect(seq.join('')).toBe('abc');
   });
 
   it('accepts an array-like', () => {
-    var alike = { length: 2, 0: 'a', 1: 'b' };
-    var seq = Seq(alike);
-    expect(Iterable.isIndexed(seq)).toBe(true);
+    const alike: any = { length: 2, 0: 'a', 1: 'b' };
+    const seq = Seq(alike);
+    expect(isIndexed(seq)).toBe(true);
     expect(seq.size).toBe(2);
     expect(seq.get(1)).toBe('b');
   });
 
   it('does not accept a scalar', () => {
     expect(() => {
-      Seq(3);
-    }).toThrow('Expected Array or iterable object of values, or keyed object: 3');
+      Seq(3 as any);
+    }).toThrow(
+      'Expected Array or collection object of values, or keyed object: 3'
+    );
   });
 
   it('detects sequences', () => {
-    var seq = Seq.of(1,2,3);
+    const seq = Seq([1, 2, 3]);
     expect(Seq.isSeq(seq)).toBe(true);
-    expect(Iterable.isIterable(seq)).toBe(true);
+    expect(isCollection(seq)).toBe(true);
   });
 
   it('Does not infinite loop when sliced with NaN', () => {
-    var list = Seq([1, 2, 3, 4, 5]);
+    const list = Seq([1, 2, 3, 4, 5]);
     expect(list.slice(0, NaN).toJS()).toEqual([]);
     expect(list.slice(NaN).toJS()).toEqual([1, 2, 3, 4, 5]);
   });
 
   it('Does not infinite loop when spliced with negative number #559', () => {
-    var dog = Seq(['d', 'o', 'g']);
-    var dg = dog.filter(c => c !== 'o');
-    var dig = (<any>dg).splice(-1, 0, 'i');
+    const dog = Seq(['d', 'o', 'g']);
+    const dg = dog.filter(c => c !== 'o');
+    const dig = (dg as any).splice(-1, 0, 'i');
     expect(dig.toJS()).toEqual(['d', 'i', 'g']);
   });
 
   it('Does not infinite loop when an undefined number is passed to take', () => {
-    var list = Seq([1, 2, 3, 4, 5]);
+    const list = Seq([1, 2, 3, 4, 5]);
     expect(list.take(NaN).toJS()).toEqual([]);
   });
 
+  it('Converts deeply toJS after converting to entries', () => {
+    const list = Seq([Seq([1, 2]), Seq({ a: 'z' })]);
+    expect(list.entrySeq().toJS()).toEqual([[0, [1, 2]], [1, { a: 'z' }]]);
+
+    const map = Seq({ x: Seq([1, 2]), y: Seq({ a: 'z' }) });
+    expect(map.entrySeq().toJS()).toEqual([['x', [1, 2]], ['y', { a: 'z' }]]);
+  });
 });

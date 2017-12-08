@@ -1,28 +1,25 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
-
 // Used for setting prototype methods that IE8 chokes on.
-export var DELETE = 'delete';
+export const DELETE = 'delete';
 
 // Constants describing the size of trie nodes.
-export var SHIFT = 5; // Resulted in best performance after ______?
-export var SIZE = 1 << SHIFT;
-export var MASK = SIZE - 1;
+export const SHIFT = 5; // Resulted in best performance after ______?
+export const SIZE = 1 << SHIFT;
+export const MASK = SIZE - 1;
 
 // A consistent shared value representing "not set" which equals nothing other
 // than itself, and nothing that could be provided externally.
-export var NOT_SET = {};
+export const NOT_SET = {};
 
 // Boolean references, Rough equivalent of `bool &`.
-export var CHANGE_LENGTH = { value: false };
-export var DID_ALTER = { value: false };
+export const CHANGE_LENGTH = { value: false };
+export const DID_ALTER = { value: false };
 
 export function MakeRef(ref) {
   ref.value = false;
@@ -37,17 +34,6 @@ export function SetRef(ref) {
 // to tries. The return value will only ever equal itself, and will not equal
 // the return of any subsequent call of this function.
 export function OwnerID() {}
-
-// http://jsperf.com/copy-array-inline
-export function arrCopy(arr, offset) {
-  offset = offset || 0;
-  var len = Math.max(0, arr.length - offset);
-  var newArr = new Array(len);
-  for (var ii = 0; ii < len; ii++) {
-    newArr[ii] = arr[ii + offset];
-  }
-  return newArr;
-}
 
 export function ensureSize(iter) {
   if (iter.size === undefined) {
@@ -65,7 +51,7 @@ export function wrapIndex(iter, index) {
   //
   // http://www.ecma-international.org/ecma-262/6.0/#sec-array-exotic-objects
   if (typeof index !== 'number') {
-    var uint32Index = index >>> 0; // N >>> 0 is shorthand for ToUint32
+    const uint32Index = index >>> 0; // N >>> 0 is shorthand for ToUint32
     if ('' + uint32Index !== index || uint32Index === 4294967295) {
       return NaN;
     }
@@ -79,8 +65,11 @@ export function returnTrue() {
 }
 
 export function wholeSlice(begin, end, size) {
-  return (begin === 0 || (size !== undefined && begin <= -size)) &&
-    (end === undefined || (size !== undefined && end >= size));
+  return (
+    ((begin === 0 && !isNeg(begin)) ||
+      (size !== undefined && begin <= -size)) &&
+    (end === undefined || (size !== undefined && end >= size))
+  );
 }
 
 export function resolveBegin(begin, size) {
@@ -92,11 +81,18 @@ export function resolveEnd(end, size) {
 }
 
 function resolveIndex(index, size, defaultIndex) {
-  return index === undefined ?
-    defaultIndex :
-    index < 0 ?
-      Math.max(0, size + index) :
-      size === undefined ?
-        index :
-        Math.min(size, index);
+  // Sanitize indices using this shorthand for ToInt32(argument)
+  // http://www.ecma-international.org/ecma-262/6.0/#sec-toint32
+  return index === undefined
+    ? defaultIndex
+    : isNeg(index)
+      ? size === Infinity ? size : Math.max(0, size + index) | 0
+      : size === undefined || size === index
+        ? index
+        : Math.min(size, index) | 0;
+}
+
+function isNeg(value) {
+  // Account for -0 which is negative, but not less than 0.
+  return value < 0 || (value === 0 && 1 / value === -Infinity);
 }

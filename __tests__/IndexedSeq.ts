@@ -1,32 +1,38 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 ///<reference path='../resources/jest.d.ts'/>
-///<reference path='../dist/immutable.d.ts'/>
+
 import * as jasmineCheck from 'jasmine-check';
 jasmineCheck.install();
 
-import { Seq } from 'immutable';
+import { Seq } from '../';
 
 describe('IndexedSequence', () => {
-
   it('maintains skipped offset', () => {
-    var seq = Seq(['A', 'B', 'C', 'D', 'E']);
+    const seq = Seq(['A', 'B', 'C', 'D', 'E']);
 
     // This is what we expect for IndexedSequences
-    var operated = seq.skip(1);
+    const operated = seq.skip(1);
     expect(operated.entrySeq().toArray()).toEqual([
       [0, 'B'],
       [1, 'C'],
       [2, 'D'],
-      [3, 'E']
+      [3, 'E'],
     ]);
 
     expect(operated.first()).toEqual('B');
   });
 
   it('reverses correctly', () => {
-    var seq = Seq(['A', 'B', 'C', 'D', 'E']);
+    const seq = Seq(['A', 'B', 'C', 'D', 'E']);
 
     // This is what we expect for IndexedSequences
-    var operated = seq.reverse();
+    const operated = seq.reverse();
     expect(operated.get(0)).toEqual('E');
     expect(operated.get(1)).toEqual('D');
     expect(operated.get(4)).toEqual('A');
@@ -36,7 +42,7 @@ describe('IndexedSequence', () => {
   });
 
   it('negative indexes correctly', () => {
-    var seq = Seq(['A', 'B', 'C', 'D', 'E']);
+    const seq = Seq(['A', 'B', 'C', 'D', 'E']);
 
     expect(seq.first()).toEqual('A');
     expect(seq.last()).toEqual('E');
@@ -44,7 +50,7 @@ describe('IndexedSequence', () => {
     expect(seq.get(2)).toEqual('C');
     expect(seq.get(-2)).toEqual('D');
 
-    var indexes = seq.keySeq();
+    const indexes = seq.keySeq();
     expect(indexes.first()).toEqual(0);
     expect(indexes.last()).toEqual(4);
     expect(indexes.get(-0)).toEqual(0);

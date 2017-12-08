@@ -1,26 +1,22 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
-import { wholeSlice, resolveBegin, resolveEnd } from './TrieUtils'
-import { IndexedSeq } from './Seq'
-import { is } from './is'
-import { Iterator, iteratorValue, iteratorDone } from './Iterator'
+import { wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
+import { IndexedSeq } from './Seq';
+import { is } from './is';
+import { Iterator, iteratorValue, iteratorDone } from './Iterator';
 
-import deepEqual from './utils/deepEqual'
-
+import deepEqual from './utils/deepEqual';
 
 /**
  * Returns a lazy Seq of `value` repeated `times` times. When `times` is
  * undefined, returns an infinite sequence of `value`.
  */
 export class Repeat extends IndexedSeq {
-
   constructor(value, times) {
     if (!(this instanceof Repeat)) {
       return new Repeat(value, times);
@@ -51,9 +47,13 @@ export class Repeat extends IndexedSeq {
   }
 
   slice(begin, end) {
-    var size = this.size;
-    return wholeSlice(begin, end, size) ? this :
-      new Repeat(this._value, resolveEnd(end, size) - resolveBegin(begin, size));
+    const size = this.size;
+    return wholeSlice(begin, end, size)
+      ? this
+      : new Repeat(
+          this._value,
+          resolveEnd(end, size) - resolveBegin(begin, size)
+        );
   }
 
   reverse() {
@@ -75,26 +75,32 @@ export class Repeat extends IndexedSeq {
   }
 
   __iterate(fn, reverse) {
-    for (var ii = 0; ii < this.size; ii++) {
-      if (fn(this._value, ii, this) === false) {
-        return ii + 1;
+    const size = this.size;
+    let i = 0;
+    while (i !== size) {
+      if (fn(this._value, reverse ? size - ++i : i++, this) === false) {
+        break;
       }
     }
-    return ii;
+    return i;
   }
 
   __iterator(type, reverse) {
-    var ii = 0;
-    return new Iterator(() =>
-      ii < this.size ? iteratorValue(type, ii++, this._value) : iteratorDone()
+    const size = this.size;
+    let i = 0;
+    return new Iterator(
+      () =>
+        i === size
+          ? iteratorDone()
+          : iteratorValue(type, reverse ? size - ++i : i++, this._value)
     );
   }
 
   equals(other) {
-    return other instanceof Repeat ?
-      is(this._value, other._value) :
-      deepEqual(other);
+    return other instanceof Repeat
+      ? is(this._value, other._value)
+      : deepEqual(other);
   }
 }
 
-var EMPTY_REPEAT;
+let EMPTY_REPEAT;

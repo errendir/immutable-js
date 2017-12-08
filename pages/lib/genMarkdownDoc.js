@@ -1,7 +1,12 @@
-require('node-jsx').install({harmony: true});
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 var markdown = require('./markdown');
 var defs = require('./getTypeDefs');
-
 
 function genMarkdownDoc(typeDefSource) {
   return markdown(
@@ -9,7 +14,7 @@ function genMarkdownDoc(typeDefSource) {
     {
       defs,
       typePath: ['Immutable'],
-      relPath: 'docs/'
+      relPath: 'docs/',
     }
   );
 }

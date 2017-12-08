@@ -1,15 +1,19 @@
 /**
- *  Copyright (c) 2014-2015, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, Facebook, Inc.
  *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
-import { is } from '../is'
-import { NOT_SET } from '../TrieUtils'
-import { isIterable, isKeyed, isIndexed, isAssociative, isOrdered } from '../Iterable'
+import { is } from '../is';
+import { NOT_SET } from '../TrieUtils';
+import {
+  isCollection,
+  isKeyed,
+  isIndexed,
+  isAssociative,
+  isOrdered,
+} from '../Predicates';
 
 export default function deepEqual(a, b) {
   if (a === b) {
@@ -17,9 +21,11 @@ export default function deepEqual(a, b) {
   }
 
   if (
-    !isIterable(b) ||
-    a.size !== undefined && b.size !== undefined && a.size !== b.size ||
-    a.__hash !== undefined && b.__hash !== undefined && a.__hash !== b.__hash ||
+    !isCollection(b) ||
+    (a.size !== undefined && b.size !== undefined && a.size !== b.size) ||
+    (a.__hash !== undefined &&
+      b.__hash !== undefined &&
+      a.__hash !== b.__hash) ||
     isKeyed(a) !== isKeyed(b) ||
     isIndexed(a) !== isIndexed(b) ||
     isOrdered(a) !== isOrdered(b)
@@ -31,17 +37,19 @@ export default function deepEqual(a, b) {
     return true;
   }
 
-  var notAssociative = !isAssociative(a);
+  const notAssociative = !isAssociative(a);
 
   if (isOrdered(a)) {
-    var entries = a.entries();
-    return b.every((v, k) => {
-      var entry = entries.next().value;
-      return entry && is(entry[1], v) && (notAssociative || is(entry[0], k));
-    }) && entries.next().done;
+    const entries = a.entries();
+    return (
+      b.every((v, k) => {
+        const entry = entries.next().value;
+        return entry && is(entry[1], v) && (notAssociative || is(entry[0], k));
+      }) && entries.next().done
+    );
   }
 
-  var flipped = false;
+  let flipped = false;
 
   if (a.size === undefined) {
     if (b.size === undefined) {
@@ -50,16 +58,19 @@ export default function deepEqual(a, b) {
       }
     } else {
       flipped = true;
-      var _ = a;
+      const _ = a;
       a = b;
       b = _;
     }
   }
 
-  var allEqual = true;
-  var bSize = b.__iterate((v, k) => {
-    if (notAssociative ? !a.has(v) :
-        flipped ? !is(v, a.get(k, NOT_SET)) : !is(a.get(k, NOT_SET), v)) {
+  let allEqual = true;
+  const bSize = b.__iterate((v, k) => {
+    if (
+      notAssociative
+        ? !a.has(v)
+        : flipped ? !is(v, a.get(k, NOT_SET)) : !is(a.get(k, NOT_SET), v)
+    ) {
       allEqual = false;
       return false;
     }

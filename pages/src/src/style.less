@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 .header {
   -khtml-user-select: none;
   -moz-user-select: none;
@@ -67,7 +74,7 @@
   font-weight: bold;
   margin-right: 1em;
   text-decoration: none;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
 }
 
 .miniHeaderContents a:last-child {
@@ -75,11 +82,11 @@
 }
 
 .coverContainer {
-  background-color: #d7dadb;
+  background-color: #c1c6c8;
   height: 70vh;
   max-height: 800px;
   min-height: 260px;
-  outline: solid 1px rgba(0,0,0,0.2);
+  outline: solid 1px rgba(0,0,0,0.28);
   overflow: hidden;
   position: relative;
   width: 100%;
@@ -109,6 +116,7 @@
   width: 100%;
   top: 0;
   height: 70vh;
+  max-height: 800px;
 }
 
 .filler {
@@ -183,6 +191,10 @@
 
   .contents {
     padding-top: 24px;
+
+    img {
+      max-width: 100%
+    }
   }
 
   .pageBody {
