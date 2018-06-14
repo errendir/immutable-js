@@ -2443,7 +2443,7 @@
 
     // Reading values
 
-    has(key: string): key is keyof TProps;
+    has(key: string | number | symbol): key is keyof TProps;
 
     /**
      * Returns the value associated with the provided key, which may be the
