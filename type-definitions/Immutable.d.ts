@@ -606,22 +606,6 @@ declare module Immutable {
     ): List<M>;
 
     /**
-     * Returns a new List with only the values for which the `predicate`
-     * function returns true.
-     *
-     * Note: `filter()` always returns a new instance, even if it results in
-     * not filtering out any values.
-     */
-    filter<F extends T>(
-      predicate: (value: T, index: number, iter: this) => value is F,
-      context?: any
-    ): List<F>;
-    filter(
-      predicate: (value: T, index: number, iter: this) => any,
-      context?: any
-    ): this;
-
-    /**
      * Returns a List "zipped" with the provided collection.
      *
      * Like `zipWith`, but using the default `zipper`: creating an `Array`.
@@ -1376,22 +1360,6 @@ declare module Immutable {
     ): Map<KM, VM>;
 
     /**
-     * Returns a new Map with only the entries for which the `predicate`
-     * function returns true.
-     *
-     * Note: `filter()` always returns a new instance, even if it results in
-     * not filtering out any values.
-     */
-    filter<F extends V>(
-      predicate: (value: V, key: K, iter: this) => value is F,
-      context?: any
-    ): Map<K, F>;
-    filter(
-      predicate: (value: V, key: K, iter: this) => any,
-      context?: any
-    ): this;
-
-    /**
      * @see Collection.Keyed.flip
      */
     flip(): Map<V, K>;
@@ -1518,22 +1486,6 @@ declare module Immutable {
       mapper: (value: V, key: K, iter: this) => Iterable<[KM, VM]>,
       context?: any
     ): OrderedMap<KM, VM>;
-
-    /**
-     * Returns a new OrderedMap with only the entries for which the `predicate`
-     * function returns true.
-     *
-     * Note: `filter()` always returns a new instance, even if it results in
-     * not filtering out any values.
-     */
-    filter<F extends V>(
-      predicate: (value: V, key: K, iter: this) => value is F,
-      context?: any
-    ): OrderedMap<K, F>;
-    filter(
-      predicate: (value: V, key: K, iter: this) => any,
-      context?: any
-    ): this;
 
     /**
      * @see Collection.Keyed.flip
@@ -1723,22 +1675,6 @@ declare module Immutable {
       mapper: (value: T, key: T, iter: this) => Iterable<M>,
       context?: any
     ): Set<M>;
-
-    /**
-     * Returns a new Set with only the values for which the `predicate`
-     * function returns true.
-     *
-     * Note: `filter()` always returns a new instance, even if it results in
-     * not filtering out any values.
-     */
-    filter<F extends T>(
-      predicate: (value: T, key: T, iter: this) => value is F,
-      context?: any
-    ): Set<F>;
-    filter(
-      predicate: (value: T, key: T, iter: this) => any,
-      context?: any
-    ): this;
   }
 
 
@@ -1810,22 +1746,6 @@ declare module Immutable {
       mapper: (value: T, key: T, iter: this) => Iterable<M>,
       context?: any
     ): OrderedSet<M>;
-
-    /**
-     * Returns a new OrderedSet with only the values for which the `predicate`
-     * function returns true.
-     *
-     * Note: `filter()` always returns a new instance, even if it results in
-     * not filtering out any values.
-     */
-    filter<F extends T>(
-      predicate: (value: T, key: T, iter: this) => value is F,
-      context?: any
-    ): OrderedSet<F>;
-    filter(
-      predicate: (value: T, key: T, iter: this) => any,
-      context?: any
-    ): this;
 
     /**
      * Returns an OrderedSet of the same type "zipped" with the provided
@@ -2040,22 +1960,6 @@ declare module Immutable {
       mapper: (value: T, key: number, iter: this) => Iterable<M>,
       context?: any
     ): Stack<M>;
-
-    /**
-     * Returns a new Set with only the values for which the `predicate`
-     * function returns true.
-     *
-     * Note: `filter()` always returns a new instance, even if it results in
-     * not filtering out any values.
-     */
-    filter<F extends T>(
-      predicate: (value: T, index: number, iter: this) => value is F,
-      context?: any
-    ): Set<F>;
-    filter(
-      predicate: (value: T, index: number, iter: this) => any,
-      context?: any
-    ): this;
 
     /**
      * Returns a Stack "zipped" with the provided collections.
@@ -2684,22 +2588,6 @@ declare module Immutable {
       ): Seq.Keyed<KM, VM>;
 
       /**
-       * Returns a new Seq with only the entries for which the `predicate`
-       * function returns true.
-       *
-       * Note: `filter()` always returns a new instance, even if it results in
-       * not filtering out any values.
-       */
-      filter<F extends V>(
-        predicate: (value: V, key: K, iter: this) => value is F,
-        context?: any
-      ): Seq.Keyed<K, F>;
-      filter(
-        predicate: (value: V, key: K, iter: this) => any,
-        context?: any
-      ): this;
-
-      /**
        * @see Collection.Keyed.flip
        */
       flip(): Seq.Keyed<V, K>;
@@ -2760,22 +2648,6 @@ declare module Immutable {
         mapper: (value: T, key: number, iter: this) => Iterable<M>,
         context?: any
       ): Seq.Indexed<M>;
-
-      /**
-       * Returns a new Seq with only the values for which the `predicate`
-       * function returns true.
-       *
-       * Note: `filter()` always returns a new instance, even if it results in
-       * not filtering out any values.
-       */
-      filter<F extends T>(
-        predicate: (value: T, index: number, iter: this) => value is F,
-        context?: any
-      ): Seq.Indexed<F>;
-      filter(
-        predicate: (value: T, index: number, iter: this) => any,
-        context?: any
-      ): this;
 
       /**
        * Returns a Seq "zipped" with the provided collections.
@@ -2894,22 +2766,6 @@ declare module Immutable {
         mapper: (value: T, key: T, iter: this) => Iterable<M>,
         context?: any
       ): Seq.Set<M>;
-
-      /**
-       * Returns a new Seq with only the values for which the `predicate`
-       * function returns true.
-       *
-       * Note: `filter()` always returns a new instance, even if it results in
-       * not filtering out any values.
-       */
-      filter<F extends T>(
-        predicate: (value: T, key: T, iter: this) => value is F,
-        context?: any
-      ): Seq.Set<F>;
-      filter(
-        predicate: (value: T, key: T, iter: this) => any,
-        context?: any
-      ): this;
     }
 
   }
@@ -2996,22 +2852,6 @@ declare module Immutable {
       mapper: (value: V, key: K, iter: this) => Iterable<M>,
       context?: any
     ): Seq<M, M>;
-
-    /**
-     * Returns a new Seq with only the values for which the `predicate`
-     * function returns true.
-     *
-     * Note: `filter()` always returns a new instance, even if it results in
-     * not filtering out any values.
-     */
-    filter<F extends V>(
-      predicate: (value: V, key: K, iter: this) => value is F,
-      context?: any
-    ): Seq<K, F>;
-    filter(
-      predicate: (value: V, key: K, iter: this) => any,
-      context?: any
-    ): this;
   }
 
   /**
@@ -3165,22 +3005,6 @@ declare module Immutable {
         mapper: (value: V, key: K, iter: this) => Iterable<[KM, VM]>,
         context?: any
       ): Collection.Keyed<KM, VM>;
-
-      /**
-       * Returns a new Collection with only the values for which the `predicate`
-       * function returns true.
-       *
-       * Note: `filter()` always returns a new instance, even if it results in
-       * not filtering out any values.
-       */
-      filter<F extends V>(
-        predicate: (value: V, key: K, iter: this) => value is F,
-        context?: any
-      ): Collection.Keyed<K, F>;
-      filter(
-        predicate: (value: V, key: K, iter: this) => any,
-        context?: any
-      ): this;
 
       [Symbol.iterator](): IterableIterator<[K, V]>;
     }
@@ -3436,22 +3260,6 @@ declare module Immutable {
         context?: any
       ): Collection.Indexed<M>;
 
-      /**
-       * Returns a new Collection with only the values for which the `predicate`
-       * function returns true.
-       *
-       * Note: `filter()` always returns a new instance, even if it results in
-       * not filtering out any values.
-       */
-      filter<F extends T>(
-        predicate: (value: T, index: number, iter: this) => value is F,
-        context?: any
-      ): Collection.Indexed<F>;
-      filter(
-        predicate: (value: T, index: number, iter: this) => any,
-        context?: any
-      ): this;
-
       [Symbol.iterator](): IterableIterator<T>;
     }
 
@@ -3518,22 +3326,6 @@ declare module Immutable {
         mapper: (value: T, key: T, iter: this) => Iterable<M>,
         context?: any
       ): Collection.Set<M>;
-
-      /**
-       * Returns a new Collection with only the values for which the `predicate`
-       * function returns true.
-       *
-       * Note: `filter()` always returns a new instance, even if it results in
-       * not filtering out any values.
-       */
-      filter<F extends T>(
-        predicate: (value: T, key: T, iter: this) => value is F,
-        context?: any
-      ): Collection.Set<F>;
-      filter(
-        predicate: (value: T, key: T, iter: this) => any,
-        context?: any
-      ): this;
 
       [Symbol.iterator](): IterableIterator<T>;
     }
@@ -3930,7 +3722,7 @@ declare module Immutable {
     filter<F extends V>(
       predicate: (value: V, key: K, iter: this) => value is F,
       context?: any
-    ): Collection<K, F>;
+    ): Collections<K, F>[ConcreteCollectionID];
     filter(
       predicate: (value: V, key: K, iter: this) => any,
       context?: any
