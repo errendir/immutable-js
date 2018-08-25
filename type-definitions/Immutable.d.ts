@@ -99,6 +99,56 @@
 
 declare module Immutable {
 
+  const CollectionID: unique symbol
+  type CollectionID = typeof CollectionID
+  const CollectionKeyedID: unique symbol
+  type CollectionKeyedID = typeof CollectionKeyedID
+  const CollectionIndexedID: unique symbol
+  type CollectionIndexedID = typeof CollectionIndexedID
+  const CollectionSetID: unique symbol
+  type CollectionSetID = typeof CollectionSetID
+
+  const ListID: unique symbol
+  type ListID = typeof ListID
+  const MapID: unique symbol
+  type MapID = typeof MapID
+  const OrderedMapID: unique symbol
+  type OrderedMapID = typeof OrderedMapID
+  const SetID: unique symbol
+  type SetID = typeof SetID
+  const OrderedSetID: unique symbol
+  type OrderedSetID = typeof OrderedSetID
+  const StackID: unique symbol
+  type StackID = typeof StackID
+
+  const SeqID: unique symbol
+  type SeqID = typeof SeqID
+  const SeqKeyedID: unique symbol
+  type SeqKeyedID = typeof SeqKeyedID
+  const SeqIndexedID: unique symbol
+  type SeqIndexedID = typeof SeqIndexedID
+  const SeqSetID: unique symbol
+  type SeqSetID = typeof SeqSetID
+
+  interface Collections<K, V> {
+    [CollectionID]: Collection<K,V>
+    [CollectionKeyedID]: Collection.Keyed<K,V>
+    [CollectionIndexedID]: Collection.Indexed<V>
+    [CollectionSetID]: Collection.Set<V>
+
+    [ListID]: List<V>
+    [MapID]: Map<K,V>
+    [OrderedMapID]: OrderedMap<K,V>
+    [SetID]: Set<V>
+    [OrderedSetID]: OrderedSet<V>
+    [StackID]: Stack<V>
+
+    [SeqID]: Seq<K,V>
+    [SeqKeyedID]: Seq.Keyed<K,V>
+    [SeqIndexedID]: Seq.Indexed<V>
+    [SeqSetID]: Seq.Set<V>
+  }
+
   /**
    * Lists are ordered indexed dense collections, much like a JavaScript
    * Array.
@@ -546,23 +596,6 @@ declare module Immutable {
     merge<C>(...collections: Array<Iterable<C>>): List<T | C>;
 
     /**
-     * Returns a new List with values passed through a
-     * `mapper` function.
-     *
-     * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable');" }
-     * -->
-     * ```js
-     * List([ 1, 2 ]).map(x => 10 * x)
-     * // List [ 10, 20 ]
-     * ```
-     */
-    map<M>(
-      mapper: (value: T, key: number, iter: this) => M,
-      context?: any
-    ): List<M>;
-
-    /**
      * Flat-maps the List, returning a new List.
      *
      * Similar to `list.map(...).flatten(true)`.
@@ -758,7 +791,7 @@ declare module Immutable {
   export function Map<K, V>(): Map<K, V>;
   export function Map(): Map<any, any>;
 
-  export interface Map<K, V> extends Collection.Keyed<K, V> {
+  export interface Map<K, V, ConcreteCollectionID extends keyof Collections<any,any> = MapID> extends Collection.Keyed<K, V, ConcreteCollectionID> {
 
     /**
      * The number of entries in this Map.
@@ -1317,18 +1350,6 @@ declare module Immutable {
     // Sequence algorithms
 
     /**
-     * Returns a new Map with values passed through a
-     * `mapper` function.
-     *
-     *     Map({ a: 1, b: 2 }).map(x => 10 * x)
-     *     // Map { a: 10, b: 20 }
-     */
-    map<M>(
-      mapper: (value: V, key: K, iter: this) => M,
-      context?: any
-    ): Map<K, M>;
-
-    /**
      * @see Collection.Keyed.mapKeys
      */
     mapKeys<M>(
@@ -1416,7 +1437,7 @@ declare module Immutable {
   export function OrderedMap<K, V>(): OrderedMap<K, V>;
   export function OrderedMap(): OrderedMap<any, any>;
 
-  export interface OrderedMap<K, V> extends Map<K, V> {
+  export interface OrderedMap<K, V> extends Map<K, V, OrderedMapID> {
 
     /**
      * The number of entries in this OrderedMap.
@@ -1471,21 +1492,6 @@ declare module Immutable {
     concat<C>(...collections: Array<{[key: string]: C}>): OrderedMap<K | string, V | C>;
 
     // Sequence algorithms
-
-    /**
-     * Returns a new OrderedMap with values passed through a
-     * `mapper` function.
-     *
-     *     OrderedMap({ a: 1, b: 2 }).map(x => 10 * x)
-     *     // OrderedMap { "a": 10, "b": 20 }
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
-     */
-    map<M>(
-      mapper: (value: V, key: K, iter: this) => M,
-      context?: any
-    ): OrderedMap<K, M>;
 
     /**
      * @see Collection.Keyed.mapKeys
@@ -1709,18 +1715,6 @@ declare module Immutable {
     // Sequence algorithms
 
     /**
-     * Returns a new Set with values passed through a
-     * `mapper` function.
-     *
-     *     Set([1,2]).map(x => 10 * x)
-     *     // Set [10,20]
-     */
-    map<M>(
-      mapper: (value: T, key: T, iter: this) => M,
-      context?: any
-    ): Set<M>;
-
-    /**
      * Flat-maps the Set, returning a new Set.
      *
      * Similar to `set.map(...).flatten(true)`.
@@ -1806,18 +1800,6 @@ declare module Immutable {
     concat<C>(...collections: Array<Iterable<C>>): OrderedSet<T | C>;
 
     // Sequence algorithms
-
-    /**
-     * Returns a new Set with values passed through a
-     * `mapper` function.
-     *
-     *     OrderedSet([ 1, 2 ]).map(x => 10 * x)
-     *     // OrderedSet [10, 20]
-     */
-    map<M>(
-      mapper: (value: T, key: T, iter: this) => M,
-      context?: any
-    ): OrderedSet<M>;
 
     /**
      * Flat-maps the OrderedSet, returning a new OrderedSet.
@@ -2048,21 +2030,6 @@ declare module Immutable {
      * Returns a new Stack with other collections concatenated to this one.
      */
     concat<C>(...valuesOrCollections: Array<Iterable<C> | C>): Stack<T | C>;
-
-    /**
-     * Returns a new Stack with values passed through a
-     * `mapper` function.
-     *
-     *     Stack([ 1, 2 ]).map(x => 10 * x)
-     *     // Stack [ 10, 20 ]
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
-     */
-    map<M>(
-      mapper: (value: T, key: number, iter: this) => M,
-      context?: any
-    ): Stack<M>;
 
     /**
      * Flat-maps the Stack, returning a new Stack.
@@ -2440,7 +2407,7 @@ declare module Immutable {
 
     // Reading values
 
-    has(key: string): key is keyof TProps;
+    has(key: string): key is ((keyof TProps) & string);
 
     /**
      * Returns the value associated with the provided key, which may be the
@@ -2656,7 +2623,7 @@ declare module Immutable {
     export function Keyed<K, V>(): Seq.Keyed<K, V>;
     export function Keyed(): Seq.Keyed<any, any>;
 
-    export interface Keyed<K, V> extends Seq<K, V>, Collection.Keyed<K, V> {
+    export interface Keyed<K, V> extends Seq<K, V, SeqKeyedID>, Collection.Keyed<K, V, SeqKeyedID> {
       /**
        * Deeply converts this Keyed Seq to equivalent native JavaScript Object.
        *
@@ -2689,24 +2656,6 @@ declare module Immutable {
        */
       concat<KC, VC>(...collections: Array<Iterable<[KC, VC]>>): Seq.Keyed<K | KC, V | VC>;
       concat<C>(...collections: Array<{[key: string]: C}>): Seq.Keyed<K | string, V | C>;
-
-      /**
-       * Returns a new Seq.Keyed with values passed through a
-       * `mapper` function.
-       *
-       * ```js
-       * const { Seq } = require('immutable')
-       * Seq.Keyed({ a: 1, b: 2 }).map(x => 10 * x)
-       * // Seq { "a": 10, "b": 20 }
-       * ```
-       *
-       * Note: `map()` always returns a new instance, even if it produced the
-       * same value at every step.
-       */
-      map<M>(
-        mapper: (value: V, key: K, iter: this) => M,
-        context?: any
-      ): Seq.Keyed<K, M>;
 
       /**
        * @see Collection.Keyed.mapKeys
@@ -2776,7 +2725,7 @@ declare module Immutable {
     export function Indexed<T>(): Seq.Indexed<T>;
     export function Indexed<T>(collection: Iterable<T>): Seq.Indexed<T>;
 
-    export interface Indexed<T> extends Seq<number, T>, Collection.Indexed<T> {
+    export interface Indexed<T> extends Seq<number, T, SeqIndexedID>, Collection.Indexed<T, SeqIndexedID> {
       /**
        * Deeply converts this Indexed Seq to equivalent native JavaScript Array.
        */
@@ -2801,24 +2750,6 @@ declare module Immutable {
        * Returns a new Seq with other collections concatenated to this one.
        */
       concat<C>(...valuesOrCollections: Array<Iterable<C> | C>): Seq.Indexed<T | C>;
-
-      /**
-       * Returns a new Seq.Indexed with values passed through a
-       * `mapper` function.
-       *
-       * ```js
-       * const { Seq } = require('immutable')
-       * Seq.Indexed([ 1, 2 ]).map(x => 10 * x)
-       * // Seq [ 10, 20 ]
-       * ```
-       *
-       * Note: `map()` always returns a new instance, even if it produced the
-       * same value at every step.
-       */
-      map<M>(
-        mapper: (value: T, key: number, iter: this) => M,
-        context?: any
-      ): Seq.Indexed<M>;
 
       /**
        * Flat-maps the Seq, returning a a Seq of the same type.
@@ -2925,7 +2856,7 @@ declare module Immutable {
     export function Set<T>(): Seq.Set<T>;
     export function Set<T>(collection: Iterable<T>): Seq.Set<T>;
 
-    export interface Set<T> extends Seq<T, T>, Collection.Set<T> {
+    export interface Set<T> extends Seq<T, T, SeqSetID>, Collection.Set<T, SeqSetID> {
       /**
        * Deeply converts this Set Seq to equivalent native JavaScript Array.
        */
@@ -2953,23 +2884,6 @@ declare module Immutable {
        * are duplicates.
        */
       concat<U>(...collections: Array<Iterable<U>>): Seq.Set<T | U>;
-
-      /**
-       * Returns a new Seq.Set with values passed through a
-       * `mapper` function.
-       *
-       * ```js
-       * Seq.Set([ 1, 2 ]).map(x => 10 * x)
-       * // Seq { 10, 20 }
-       * ```
-       *
-       * Note: `map()` always returns a new instance, even if it produced the
-       * same value at every step.
-       */
-      map<M>(
-        mapper: (value: T, key: T, iter: this) => M,
-        context?: any
-      ): Seq.Set<M>;
 
       /**
        * Flat-maps the Seq, returning a Seq of the same type.
@@ -3021,7 +2935,7 @@ declare module Immutable {
   export function Seq<V>(obj: {[key: string]: V}): Seq.Keyed<string, V>;
   export function Seq(): Seq<any, any>;
 
-  export interface Seq<K, V> extends Collection<K, V> {
+  export interface Seq<K, V, ConcreteCollectionID extends keyof Collections<any,any> = SeqID> extends Collection<K, V, ConcreteCollectionID> {
 
     /**
      * Some Seqs can describe their size lazily. When this is the case,
@@ -3061,43 +2975,6 @@ declare module Immutable {
     cacheResult(): this;
 
     // Sequence algorithms
-
-    /**
-     * Returns a new Seq with values passed through a
-     * `mapper` function.
-     *
-     * ```js
-     * const { Seq } = require('immutable')
-     * Seq([ 1, 2 ]).map(x => 10 * x)
-     * // Seq [ 10, 20 ]
-     * ```
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
-     */
-    map<M>(
-      mapper: (value: V, key: K, iter: this) => M,
-      context?: any
-    ): Seq<K, M>;
-
-    /**
-     * Returns a new Seq with values passed through a
-     * `mapper` function.
-     *
-     * ```js
-     * const { Seq } = require('immutable')
-     * Seq([ 1, 2 ]).map(x => 10 * x)
-     * // Seq [ 10, 20 ]
-     * ```
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
-     * Note: used only for sets.
-     */
-    map<M>(
-      mapper: (value: V, key: K, iter: this) => M,
-      context?: any
-    ): Seq<M, M>;
 
     /**
      * Flat-maps the Seq, returning a Seq of the same type.
@@ -3192,7 +3069,7 @@ declare module Immutable {
     export function Keyed<K, V>(collection: Iterable<[K, V]>): Collection.Keyed<K, V>;
     export function Keyed<V>(obj: {[key: string]: V}): Collection.Keyed<string, V>;
 
-    export interface Keyed<K, V> extends Collection<K, V> {
+    export interface Keyed<K, V, ConcreteCollectionID extends keyof Collections<any,any> = CollectionKeyedID> extends Collection<K, V, ConcreteCollectionID> {
       /**
        * Deeply converts this Keyed collection to equivalent native JavaScript Object.
        *
@@ -3239,24 +3116,6 @@ declare module Immutable {
        */
       concat<KC, VC>(...collections: Array<Iterable<[KC, VC]>>): Collection.Keyed<K | KC, V | VC>;
       concat<C>(...collections: Array<{[key: string]: C}>): Collection.Keyed<K | string, V | C>;
-
-      /**
-       * Returns a new Collection.Keyed with values passed through a
-       * `mapper` function.
-       *
-       * ```js
-       * const { Collection } = require('immutable')
-       * Collection.Keyed({ a: 1, b: 2 }).map(x => 10 * x)
-       * // Seq { "a": 10, "b": 20 }
-       * ```
-       *
-       * Note: `map()` always returns a new instance, even if it produced the
-       * same value at every step.
-       */
-      map<M>(
-        mapper: (value: V, key: K, iter: this) => M,
-        context?: any
-      ): Collection.Keyed<K, M>;
 
       /**
        * Returns a new Collection.Keyed of the same type with keys passed through
@@ -3349,7 +3208,7 @@ declare module Immutable {
      */
     export function Indexed<T>(collection: Iterable<T>): Collection.Indexed<T>;
 
-    export interface Indexed<T> extends Collection<number, T> {
+    export interface Indexed<T, ConcreteCollectionID extends keyof Collections<any,any> = CollectionIndexedID> extends Collection<number, T, ConcreteCollectionID> {
       /**
        * Deeply converts this Indexed collection to equivalent native JavaScript Array.
        */
@@ -3568,24 +3427,6 @@ declare module Immutable {
       concat<C>(...valuesOrCollections: Array<Iterable<C> | C>): Collection.Indexed<T | C>;
 
       /**
-       * Returns a new Collection.Indexed with values passed through a
-       * `mapper` function.
-       *
-       * ```js
-       * const { Collection } = require('immutable')
-       * Collection.Indexed([1,2]).map(x => 10 * x)
-       * // Seq [ 1, 2 ]
-       * ```
-       *
-       * Note: `map()` always returns a new instance, even if it produced the
-       * same value at every step.
-       */
-      map<M>(
-        mapper: (value: T, key: number, iter: this) => M,
-        context?: any
-      ): Collection.Indexed<M>;
-
-      /**
        * Flat-maps the Collection, returning a Collection of the same type.
        *
        * Similar to `collection.map(...).flatten(true)`.
@@ -3639,7 +3480,7 @@ declare module Immutable {
      */
     export function Set<T>(collection: Iterable<T>): Collection.Set<T>;
 
-    export interface Set<T> extends Collection<T, T> {
+    export interface Set<T, ConcreteCollectionID extends keyof Collections<any,any> = CollectionSetID> extends Collection<T, T, ConcreteCollectionID> {
       /**
        * Deeply converts this Set collection to equivalent native JavaScript Array.
        */
@@ -3667,23 +3508,6 @@ declare module Immutable {
        * Returns a new Collection with other collections concatenated to this one.
        */
       concat<U>(...collections: Array<Iterable<U>>): Collection.Set<T | U>;
-
-      /**
-       * Returns a new Collection.Set with values passed through a
-       * `mapper` function.
-       *
-       * ```
-       * Collection.Set([ 1, 2 ]).map(x => 10 * x)
-       * // Seq { 1, 2 }
-       * ```
-       *
-       * Note: `map()` always returns a new instance, even if it produced the
-       * same value at every step.
-       */
-      map<M>(
-        mapper: (value: T, key: T, iter: this) => M,
-        context?: any
-      ): Collection.Set<M>;
 
       /**
        * Flat-maps the Collection, returning a Collection of the same type.
@@ -3735,7 +3559,7 @@ declare module Immutable {
   export function Collection<T>(collection: Iterable<T>): Collection.Indexed<T>;
   export function Collection<V>(obj: {[key: string]: V}): Collection.Keyed<string, V>;
 
-  export interface Collection<K, V> extends ValueObject {
+  export interface Collection<K, V, ConcreteCollectionID extends keyof Collections<any,any> = CollectionID> extends ValueObject {
 
     // Value equality
 
@@ -4079,7 +3903,7 @@ declare module Immutable {
     map<M>(
       mapper: (value: V, key: K, iter: this) => M,
       context?: any
-    ): Collection<K, M>;
+    ): Collections<K, M>[ConcreteCollectionID];
 
     /**
      * Note: used only for sets, which return Collection<M, M> but are otherwise
