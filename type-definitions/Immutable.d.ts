@@ -604,75 +604,6 @@ declare module Immutable {
       mapper: (value: T, key: number, iter: this) => Iterable<M>,
       context?: any
     ): List<M>;
-
-    /**
-     * Returns a List "zipped" with the provided collection.
-     *
-     * Like `zipWith`, but using the default `zipper`: creating an `Array`.
-     *
-     * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable');" }
-     * -->
-     * ```js
-     * const a = List([ 1, 2, 3 ]);
-     * const b = List([ 4, 5, 6 ]);
-     * const c = a.zip(b); // List [ [ 1, 4 ], [ 2, 5 ], [ 3, 6 ] ]
-     * ```
-     */
-    zip<U>(other: Collection<any, U>): List<[T,U]>;
-    zip<U,V>(other: Collection<any, U>, other2: Collection<any,V>): List<[T,U,V]>;
-    zip(...collections: Array<Collection<any, any>>): List<any>;
-
-    /**
-     * Returns a List "zipped" with the provided collections.
-     *
-     * Unlike `zip`, `zipAll` continues zipping until the longest collection is
-     * exhausted. Missing values from shorter collections are filled with `undefined`.
-     *
-     * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable');" }
-     * -->
-     * ```js
-     * const a = List([ 1, 2 ]);
-     * const b = List([ 3, 4, 5 ]);
-     * const c = a.zipAll(b); // List [ [ 1, 3 ], [ 2, 4 ], [ undefined, 5 ] ]
-     * ```
-     *
-     * Note: Since zipAll will return a collection as large as the largest
-     * input, some results may contain undefined values. TypeScript cannot
-     * account for these without cases (as of v2.5).
-     */
-    zipAll<U>(other: Collection<any, U>): List<[T,U]>;
-    zipAll<U,V>(other: Collection<any, U>, other2: Collection<any,V>): List<[T,U,V]>;
-    zipAll(...collections: Array<Collection<any, any>>): List<any>;
-
-    /**
-     * Returns a List "zipped" with the provided collections by using a
-     * custom `zipper` function.
-     *
-     * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable');" }
-     * -->
-     * ```js
-     * const a = List([ 1, 2, 3 ]);
-     * const b = List([ 4, 5, 6 ]);
-     * const c = a.zipWith((a, b) => a + b, b);
-     * // List [ 5, 7, 9 ]
-     * ```
-     */
-    zipWith<U, Z>(
-      zipper: (value: T, otherValue: U) => Z,
-      otherCollection: Collection<any, U>
-    ): List<Z>;
-    zipWith<U, V, Z>(
-      zipper: (value: T, otherValue: U, thirdValue: V) => Z,
-      otherCollection: Collection<any, U>,
-      thirdCollection: Collection<any, V>
-    ): List<Z>;
-    zipWith<Z>(
-      zipper: (...any: Array<any>) => Z,
-      ...collections: Array<Collection<any, any>>
-    ): List<Z>;
   }
 
 
@@ -1960,66 +1891,6 @@ declare module Immutable {
       mapper: (value: T, key: number, iter: this) => Iterable<M>,
       context?: any
     ): Stack<M>;
-
-    /**
-     * Returns a Stack "zipped" with the provided collections.
-     *
-     * Like `zipWith`, but using the default `zipper`: creating an `Array`.
-     *
-     * ```js
-     * const a = Stack([ 1, 2, 3 ]);
-     * const b = Stack([ 4, 5, 6 ]);
-     * const c = a.zip(b); // Stack [ [ 1, 4 ], [ 2, 5 ], [ 3, 6 ] ]
-     * ```
-     */
-    zip<U>(other: Collection<any, U>): Stack<[T,U]>;
-    zip<U,V>(other: Collection<any, U>, other2: Collection<any,V>): Stack<[T,U,V]>;
-    zip(...collections: Array<Collection<any, any>>): Stack<any>;
-
-    /**
-     * Returns a Stack "zipped" with the provided collections.
-     *
-     * Unlike `zip`, `zipAll` continues zipping until the longest collection is
-     * exhausted. Missing values from shorter collections are filled with `undefined`.
-     *
-     * ```js
-     * const a = Stack([ 1, 2 ]);
-     * const b = Stack([ 3, 4, 5 ]);
-     * const c = a.zipAll(b); // Stack [ [ 1, 3 ], [ 2, 4 ], [ undefined, 5 ] ]
-     * ```
-     *
-     * Note: Since zipAll will return a collection as large as the largest
-     * input, some results may contain undefined values. TypeScript cannot
-     * account for these without cases (as of v2.5).
-     */
-    zipAll<U>(other: Collection<any, U>): Stack<[T,U]>;
-    zipAll<U,V>(other: Collection<any, U>, other2: Collection<any,V>): Stack<[T,U,V]>;
-    zipAll(...collections: Array<Collection<any, any>>): Stack<any>;
-
-    /**
-     * Returns a Stack "zipped" with the provided collections by using a
-     * custom `zipper` function.
-     *
-     * ```js
-     * const a = Stack([ 1, 2, 3 ]);
-     * const b = Stack([ 4, 5, 6 ]);
-     * const c = a.zipWith((a, b) => a + b, b);
-     * // Stack [ 5, 7, 9 ]
-     * ```
-     */
-    zipWith<U, Z>(
-      zipper: (value: T, otherValue: U) => Z,
-      otherCollection: Collection<any, U>
-    ): Stack<Z>;
-    zipWith<U, V, Z>(
-      zipper: (value: T, otherValue: U, thirdValue: V) => Z,
-      otherCollection: Collection<any, U>,
-      thirdCollection: Collection<any, V>
-    ): Stack<Z>;
-    zipWith<Z>(
-      zipper: (...any: Array<any>) => Z,
-      ...collections: Array<Collection<any, any>>
-    ): Stack<Z>;
   }
 
 
@@ -2648,62 +2519,6 @@ declare module Immutable {
         mapper: (value: T, key: number, iter: this) => Iterable<M>,
         context?: any
       ): Seq.Indexed<M>;
-
-      /**
-       * Returns a Seq "zipped" with the provided collections.
-       *
-       * Like `zipWith`, but using the default `zipper`: creating an `Array`.
-       *
-       * ```js
-       * const a = Seq([ 1, 2, 3 ]);
-       * const b = Seq([ 4, 5, 6 ]);
-       * const c = a.zip(b); // Seq [ [ 1, 4 ], [ 2, 5 ], [ 3, 6 ] ]
-       * ```
-       */
-      zip<U>(other: Collection<any, U>): Seq.Indexed<[T,U]>;
-      zip<U,V>(other: Collection<any, U>, other2: Collection<any, V>): Seq.Indexed<[T,U,V]>;
-      zip(...collections: Array<Collection<any, any>>): Seq.Indexed<any>;
-
-      /**
-       * Returns a Seq "zipped" with the provided collections.
-       *
-       * Unlike `zip`, `zipAll` continues zipping until the longest collection is
-       * exhausted. Missing values from shorter collections are filled with `undefined`.
-       *
-       * ```js
-       * const a = Seq([ 1, 2 ]);
-       * const b = Seq([ 3, 4, 5 ]);
-       * const c = a.zipAll(b); // Seq [ [ 1, 3 ], [ 2, 4 ], [ undefined, 5 ] ]
-       * ```
-       */
-      zipAll<U>(other: Collection<any, U>): Seq.Indexed<[T,U]>;
-      zipAll<U,V>(other: Collection<any, U>, other2: Collection<any, V>): Seq.Indexed<[T,U,V]>;
-      zipAll(...collections: Array<Collection<any, any>>): Seq.Indexed<any>;
-
-      /**
-       * Returns a Seq "zipped" with the provided collections by using a
-       * custom `zipper` function.
-       *
-       * ```js
-       * const a = Seq([ 1, 2, 3 ]);
-       * const b = Seq([ 4, 5, 6 ]);
-       * const c = a.zipWith((a, b) => a + b, b);
-       * // Seq [ 5, 7, 9 ]
-       * ```
-       */
-      zipWith<U, Z>(
-        zipper: (value: T, otherValue: U) => Z,
-        otherCollection: Collection<any, U>
-      ): Seq.Indexed<Z>;
-      zipWith<U, V, Z>(
-        zipper: (value: T, otherValue: U, thirdValue: V) => Z,
-        otherCollection: Collection<any, U>,
-        thirdCollection: Collection<any, V>
-      ): Seq.Indexed<Z>;
-      zipWith<Z>(
-        zipper: (...any: Array<any>) => Z,
-        ...collections: Array<Collection<any, any>>
-      ): Seq.Indexed<Z>;
     }
 
 
@@ -3162,9 +2977,9 @@ declare module Immutable {
        * const c = a.zip(b); // List [ [ 1, 4 ], [ 2, 5 ], [ 3, 6 ] ]
        * ```
        */
-      zip<U>(other: Collection<any, U>): Collection.Indexed<[T,U]>;
-      zip<U,V>(other: Collection<any, U>, other2: Collection<any, V>): Collection.Indexed<[T,U,V]>;
-      zip(...collections: Array<Collection<any, any>>): Collection.Indexed<any>;
+      zip<U>(other: Collection<any, U>): Collections<number,[T,U]>[ConcreteCollectionID];
+      zip<U,V>(other: Collection<any, U>, other2: Collection<any, V>): Collections<number,[T,U,V]>[ConcreteCollectionID];
+      zip(...collections: Array<Collection<any, any>>): Collections<number,any>[ConcreteCollectionID];
 
       /**
        * Returns a Collection "zipped" with the provided collections.
@@ -3178,9 +2993,9 @@ declare module Immutable {
        * const c = a.zipAll(b); // List [ [ 1, 3 ], [ 2, 4 ], [ undefined, 5 ] ]
        * ```
        */
-      zipAll<U>(other: Collection<any, U>): Collection.Indexed<[T,U]>;
-      zipAll<U,V>(other: Collection<any, U>, other2: Collection<any, V>): Collection.Indexed<[T,U,V]>;
-      zipAll(...collections: Array<Collection<any, any>>): Collection.Indexed<any>;
+      zipAll<U>(other: Collection<any, U>): Collections<number,[T,U]>[ConcreteCollectionID];
+      zipAll<U,V>(other: Collection<any, U>, other2: Collection<any, V>): Collections<number,[T,U,V]>[ConcreteCollectionID];
+      zipAll(...collections: Array<Collection<any, any>>): Collections<number,any>[ConcreteCollectionID];
 
       /**
        * Returns a Collection of the same type "zipped" with the provided
@@ -3199,16 +3014,16 @@ declare module Immutable {
       zipWith<U, Z>(
         zipper: (value: T, otherValue: U) => Z,
         otherCollection: Collection<any, U>
-      ): Collection.Indexed<Z>;
+      ): Collections<number,Z>[ConcreteCollectionID];
       zipWith<U, V, Z>(
         zipper: (value: T, otherValue: U, thirdValue: V) => Z,
         otherCollection: Collection<any, U>,
         thirdCollection: Collection<any, V>
-      ): Collection.Indexed<Z>;
+      ): Collections<number,Z>[ConcreteCollectionID];
       zipWith<Z>(
         zipper: (...any: Array<any>) => Z,
         ...collections: Array<Collection<any, any>>
-      ): Collection.Indexed<Z>;
+      ): Collections<number,Z>[ConcreteCollectionID];
 
 
       // Search for value
