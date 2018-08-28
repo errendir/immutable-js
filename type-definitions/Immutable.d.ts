@@ -1494,7 +1494,7 @@ declare module Immutable {
   export function Set<T>(): Set<T>;
   export function Set<T>(collection: Iterable<T>): Set<T>;
 
-  export interface Set<T> extends Collection.Set<T> {
+  export interface Set<T, ConcreteCollectionID extends keyof Collections<any,any> = SetID> extends Collection.Set<T, ConcreteCollectionID> {
 
     /**
      * The number of items in this Set.
@@ -1538,9 +1538,8 @@ declare module Immutable {
      * @alias merge
      * @alias concat
      */
-    union<C>(...collections: Array<Iterable<C>>): Set<T | C>;
-    merge<C>(...collections: Array<Iterable<C>>): Set<T | C>;
-    concat<C>(...collections: Array<Iterable<C>>): Set<T | C>;
+    union<C>(...collections: Array<Iterable<C>>): Collections<T | C, T | C>[ConcreteCollectionID];
+    merge<C>(...collections: Array<Iterable<C>>): Collections<T | C, T | C>[ConcreteCollectionID];
 
     /**
      * Returns a Set which has removed any values not also contained
@@ -1647,24 +1646,12 @@ declare module Immutable {
   export function OrderedSet<T>(): OrderedSet<T>;
   export function OrderedSet<T>(collection: Iterable<T>): OrderedSet<T>;
 
-  export interface OrderedSet<T> extends Set<T> {
+  export interface OrderedSet<T> extends Set<T, OrderedSetID> {
 
     /**
      * The number of items in this OrderedSet.
      */
     readonly size: number;
-
-    /**
-     * Returns an OrderedSet including any value from `collections` that does
-     * not already exist in this OrderedSet.
-     *
-     * Note: `union` can be used in `withMutations`.
-     * @alias merge
-     * @alias concat
-     */
-    union<C>(...collections: Array<Iterable<C>>): OrderedSet<T | C>;
-    merge<C>(...collections: Array<Iterable<C>>): OrderedSet<T | C>;
-    concat<C>(...collections: Array<Iterable<C>>): OrderedSet<T | C>;
 
     // Sequence algorithms
 
@@ -2570,7 +2557,7 @@ declare module Immutable {
        * All entries will be present in the resulting Seq, even if they
        * are duplicates.
        */
-      concat<U>(...collections: Array<Iterable<U>>): Seq.Set<T | U>;
+      concat<C>(...collections: Array<Iterable<C>>): Seq.Set<T | C>;
 
       /**
        * Flat-maps the Seq, returning a Seq of the same type.
@@ -3130,7 +3117,7 @@ declare module Immutable {
       /**
        * Returns a new Collection with other collections concatenated to this one.
        */
-      concat<U>(...collections: Array<Iterable<U>>): Collection.Set<T | U>;
+      concat<C>(...collections: Array<Iterable<C>>): Collections<T | C, T | C>[ConcreteCollectionID];
 
       /**
        * Flat-maps the Collection, returning a Collection of the same type.
